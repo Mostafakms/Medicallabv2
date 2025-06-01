@@ -37,6 +37,7 @@ interface Test {
   status: string;
   parameters: string[];
   sample_types: string[];
+  samples_count: number;
 }
 
 // Standardize allowed sample types for tests to match receive sample
@@ -51,6 +52,11 @@ const allowedSampleTypes = [
 const Tests = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    usage: 'all', // 'all' or 'active'
+    category: 'all',
+    status: 'all'
+  });
   const queryClient = useQueryClient();
 
   // Form state
@@ -66,12 +72,17 @@ const Tests = () => {
     status: 'active'
   });
 
-  // Safe test data fetching
+  // Safe test data fetching with filters
   const { data: testsResponse, isLoading, error, isError } = useQuery({
-    queryKey: ["tests"],
+    queryKey: ["tests", filters],
     queryFn: async () => {
       try {
-        const response = await api.getTests();
+        const params = new URLSearchParams();
+        if (filters.usage === 'active') params.append('usage', 'active');
+        if (filters.category !== 'all') params.append('category', filters.category);
+        if (filters.status !== 'all') params.append('status', filters.status);
+        
+        const response = await api.getTests(params);
         if (!response?.data?.data) {
           throw new Error("Invalid response format from server");
         }
@@ -100,7 +111,8 @@ const Tests = () => {
       sample_types: Array.isArray(test?.sample_types) ? test?.sample_types : [],
       price: typeof test?.price === 'number' ? test?.price : 0,
       status: test?.status || 'unknown',
-      duration: test?.duration || ''
+      duration: test?.duration || '',
+      samples_count: typeof test?.samples_count === 'number' ? test?.samples_count : 0
     }));
   }, [testsResponse]);
 
@@ -344,20 +356,40 @@ const Tests = () => {
         </Dialog>
       </div>
 
-      {/* Search and Filters */}
+      {/* Filters Card */}
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
+            {/* Search Input */}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
               <Input
-                placeholder="Search tests by name, code, or category..."
+                placeholder="Search tests..."
+                className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
               />
             </div>
-            <Select>
+
+            {/* Usage Filter */}
+            <Select
+              value={filters.usage}
+              onValueChange={(value) => setFilters(prev => ({ ...prev, usage: value }))}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Usage" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Tests</SelectItem>
+                <SelectItem value="active">Active in Samples</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Category Filter */}
+            <Select
+              value={filters.category}
+              onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}
+            >
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
@@ -370,7 +402,12 @@ const Tests = () => {
                 <SelectItem value="endocrinology">Endocrinology</SelectItem>
               </SelectContent>
             </Select>
-            <Select>
+
+            {/* Status Filter */}
+            <Select
+              value={filters.status}
+              onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
+            >
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -406,6 +443,7 @@ const Tests = () => {
                   <TableHead>Price</TableHead>
                   <TableHead>Duration</TableHead>
                   <TableHead>Parameters</TableHead>
+                  <TableHead>Usage</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -413,7 +451,7 @@ const Tests = () => {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={10} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : filteredTests.map((test: any) => (
                   <TableRow key={test.id}>
@@ -449,8 +487,19 @@ const Tests = () => {
                       </div>
                     </TableCell>
                     <TableCell>
+                      {test.samples_count > 0 ? (
+                        <Badge className="bg-green-100 text-green-800">
+                          {test.samples_count} Sample{test.samples_count !== 1 ? 's' : ''}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-gray-500">
+                          Not in use
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <Badge 
-                        className={test.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}
+                        className={test.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}
                       >
                         {(test.status || 'unknown').charAt(0).toUpperCase() + (test.status || 'unknown').slice(1)}
                       </Badge>

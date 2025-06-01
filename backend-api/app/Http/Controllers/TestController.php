@@ -15,11 +15,16 @@ class TestController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Test::query();
+        $query = Test::query()->withCount('samples');
 
         // Filter by sample type if provided
         if ($request->has('sample_type')) {
             $query->whereJsonContains('sample_types', $request->sample_type);
+        }
+
+        // Filter by usage if provided
+        if ($request->has('usage') && $request->usage === 'active') {
+            $query->has('samples');
         }
 
         // Filter by category if provided

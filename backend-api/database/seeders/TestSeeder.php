@@ -483,13 +483,275 @@ class TestSeeder extends Seeder
                 'code' => 'PSA',
                 'name' => 'Prostate-Specific Antigen (Total)',
                 'sample_types' => ['Blood (Serum)'],
-                'category' => 'Tumor Markers', // Or Clinical Chemistry/Endocrinology
+                'category' => 'Tumor Markers',
                 'department' => 'Laboratory',
                 'price' => 55.00,
                 'duration' => '6-12 hours',
                 'status' => 'Active',
                 'parameters' => ['Total PSA Level']
             ],
+
+            // Additional Blood Tests
+            [
+                'code' => 'BHCG',
+                'name' => 'Beta HCG (Pregnancy Test)',
+                'sample_types' => ['Blood (Serum)', 'Urine'],
+                'category' => 'Endocrinology',
+                'department' => 'Laboratory',
+                'price' => 40.00,
+                'duration' => '2-4 hours',
+                'status' => 'Active',
+                'parameters' => ['Beta HCG Level']
+            ],
+            [
+                'code' => 'CORTISOL',
+                'name' => 'Cortisol',
+                'sample_types' => ['Blood (Serum)', 'Urine (24-hour)'],
+                'category' => 'Endocrinology',
+                'department' => 'Laboratory',
+                'price' => 65.00,
+                'duration' => '1 day',
+                'status' => 'Active',
+                'parameters' => ['Cortisol Level']
+            ],
+            [
+                'code' => 'TROP',
+                'name' => 'Cardiac Troponin',
+                'sample_types' => ['Blood (Serum, Plasma)'],
+                'category' => 'Cardiac Markers',
+                'department' => 'Laboratory',
+                'price' => 70.00,
+                'duration' => '1-2 hours',
+                'status' => 'Active',
+                'parameters' => ['Troponin I/T Level']
+            ],
+
+            // Additional Urine Tests
+            [
+                'code' => '24HR_PROT',
+                'name' => '24-Hour Urine Protein',
+                'sample_types' => ['Urine (24-hour collection)'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 45.00,
+                'duration' => '1 day',
+                'status' => 'Active',
+                'parameters' => ['Total Protein', 'Collection Volume', 'Collection Duration']
+            ],
+            [
+                'code' => 'MICROALB',
+                'name' => 'Microalbumin',
+                'sample_types' => ['Urine (Random or 24-hour)'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 35.00,
+                'duration' => '2-4 hours',
+                'status' => 'Active',
+                'parameters' => ['Microalbumin Level', 'Creatinine', 'Albumin/Creatinine Ratio']
+            ],
+
+            // Additional Stool Tests
+            [
+                'code' => 'OCCULTB',
+                'name' => 'Occult Blood',
+                'sample_types' => ['Stool'],
+                'category' => 'Clinical Pathology',
+                'department' => 'Laboratory',
+                'price' => 25.00,
+                'duration' => '1-2 hours',
+                'status' => 'Active',
+                'parameters' => ['Occult Blood Result']
+            ],
+            [
+                'code' => 'PARASIT',
+                'name' => 'Stool Parasitology',
+                'sample_types' => ['Stool (Fresh)'],
+                'category' => 'Microbiology',
+                'department' => 'Laboratory',
+                'price' => 50.00,
+                'duration' => '1-2 days',
+                'status' => 'Active',
+                'parameters' => ['Microscopy', 'Ova', 'Parasites', 'Cysts']
+            ],
+
+            // Additional Sputum Tests
+            [
+                'code' => 'SPUTCULT',
+                'name' => 'Sputum Culture and Sensitivity',
+                'sample_types' => ['Sputum'],
+                'category' => 'Microbiology',
+                'department' => 'Laboratory',
+                'price' => 85.00,
+                'duration' => '3-5 days',
+                'status' => 'Active',
+                'parameters' => ['Organism Identification', 'Colony Count', 'Antibiotic Sensitivity']
+            ],
+            [
+                'code' => 'CYTOLOGY',
+                'name' => 'Sputum Cytology',
+                'sample_types' => ['Sputum'],
+                'category' => 'Cytology',
+                'department' => 'Pathology',
+                'price' => 90.00,
+                'duration' => '3-5 days',
+                'status' => 'Active',
+                'parameters' => ['Cell Types', 'Abnormal Cells', 'Malignant Cells']
+            ],
+
+            // Additional Tissue Tests
+            [
+                'code' => 'BIOPSY',
+                'name' => 'Tissue Biopsy Histopathology',
+                'sample_types' => ['Tissue'],
+                'category' => 'Histopathology',
+                'department' => 'Pathology',
+                'price' => 150.00,
+                'duration' => '3-7 days',
+                'status' => 'Active',
+                'parameters' => ['Tissue Type', 'Microscopic Findings', 'Diagnosis']
+            ],
+            [
+                'code' => 'FNAC',
+                'name' => 'Fine Needle Aspiration Cytology',
+                'sample_types' => ['Tissue (FNA Sample)'],
+                'category' => 'Cytology',
+                'department' => 'Pathology',
+                'price' => 120.00,
+                'duration' => '2-4 days',
+                'status' => 'Active',
+                'parameters' => ['Adequacy', 'Cell Types', 'Diagnosis']
+            ],
+
+            // Additional Specialized Blood Tests
+            [
+                'code' => 'HEMO_ELEC',
+                'name' => 'Hemoglobin Electrophoresis',
+                'sample_types' => ['Blood (Whole, EDTA)'],
+                'category' => 'Hematology',
+                'department' => 'Laboratory',
+                'price' => 85.00,
+                'duration' => '2-3 days',
+                'status' => 'Active',
+                'parameters' => ['HbA', 'HbA2', 'HbF', 'HbS', 'Other Variants']
+            ],
+            [
+                'code' => 'MALARIA',
+                'name' => 'Malaria Panel',
+                'sample_types' => ['Blood (Whole, EDTA)'],
+                'category' => 'Hematology',
+                'department' => 'Laboratory',
+                'price' => 40.00,
+                'duration' => '2-4 hours',
+                'status' => 'Active',
+                'parameters' => ['Microscopy', 'Species Identification', 'Parasite Count', 'Rapid Test']
+            ],
+            [
+                'code' => 'LUPUS',
+                'name' => 'Lupus Panel',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Immunology/Serology',
+                'department' => 'Laboratory',
+                'price' => 150.00,
+                'duration' => '3-5 days',
+                'status' => 'Active',
+                'parameters' => ['ANA', 'Anti-dsDNA', 'Anti-Sm', 'Anti-RNP', 'C3', 'C4']
+            ],
+
+            // Additional Specialized Urine Tests
+            [
+                'code' => 'DRUG_SCREEN',
+                'name' => 'Drug Screening Panel',
+                'sample_types' => ['Urine (Random)'],
+                'category' => 'Toxicology',
+                'department' => 'Laboratory',
+                'price' => 120.00,
+                'duration' => '1-2 days',
+                'status' => 'Active',
+                'parameters' => ['Opiates', 'Cocaine', 'Amphetamines', 'Cannabinoids', 'Benzodiazepines', 'Barbiturates']
+            ],
+            [
+                'code' => 'STONE_ANAL',
+                'name' => 'Kidney Stone Analysis',
+                'sample_types' => ['Urine', 'Kidney Stone'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 90.00,
+                'duration' => '2-3 days',
+                'status' => 'Active',
+                'parameters' => ['Stone Composition', 'Crystal Type', 'Chemical Analysis']
+            ],
+
+            // Additional Specialized Stool Tests
+            [
+                'code' => 'HELICO',
+                'name' => 'H. pylori Stool Antigen',
+                'sample_types' => ['Stool (Fresh)'],
+                'category' => 'Microbiology',
+                'department' => 'Laboratory',
+                'price' => 65.00,
+                'duration' => '1-2 days',
+                'status' => 'Active',
+                'parameters' => ['H. pylori Antigen']
+            ],
+            [
+                'code' => 'ELASTASE',
+                'name' => 'Fecal Elastase-1',
+                'sample_types' => ['Stool (Fresh)'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 95.00,
+                'duration' => '2-3 days',
+                'status' => 'Active',
+                'parameters' => ['Elastase-1 Level']
+            ],
+
+            // Additional Specialized Sputum Tests
+            [
+                'code' => 'TB_PCR',
+                'name' => 'TB PCR Test',
+                'sample_types' => ['Sputum'],
+                'category' => 'Molecular Diagnostics',
+                'department' => 'Laboratory',
+                'price' => 180.00,
+                'duration' => '1-2 days',
+                'status' => 'Active',
+                'parameters' => ['M. tuberculosis DNA', 'Rifampicin Resistance']
+            ],
+            [
+                'code' => 'FUNGAL_CULT',
+                'name' => 'Fungal Culture',
+                'sample_types' => ['Sputum', 'Tissue', 'Body Fluids'],
+                'category' => 'Microbiology',
+                'department' => 'Laboratory',
+                'price' => 75.00,
+                'duration' => '7-14 days',
+                'status' => 'Active',
+                'parameters' => ['Fungal Species', 'Growth Characteristics', 'Microscopy']
+            ],
+
+            // Additional Specialized Tissue Tests
+            [
+                'code' => 'IHC',
+                'name' => 'Immunohistochemistry',
+                'sample_types' => ['Tissue'],
+                'category' => 'Histopathology',
+                'department' => 'Pathology',
+                'price' => 200.00,
+                'duration' => '3-5 days',
+                'status' => 'Active',
+                'parameters' => ['Marker Expression', 'Staining Pattern', 'Interpretation']
+            ],
+            [
+                'code' => 'LYMPH_PANEL',
+                'name' => 'Lymphoma Panel',
+                'sample_types' => ['Tissue (Lymph Node)', 'Blood (Whole, EDTA)'],
+                'category' => 'Pathology',
+                'department' => 'Pathology',
+                'price' => 280.00,
+                'duration' => '5-7 days',
+                'status' => 'Active',
+                'parameters' => ['Morphology', 'Flow Cytometry', 'IHC Markers', 'Molecular Studies']
+            ]
         ];
 
         foreach ($tests as $testData) {

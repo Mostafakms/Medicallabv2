@@ -25,6 +25,7 @@ class TestResource extends JsonResource
             'duration' => $this->duration,
             'status' => $this->status,
             'parameters' => $this->parameters,
+            'samples_count' => $this->whenCounted('samples'),
             // Include pivot data when available
             'pivot' => $this->whenPivotLoaded('sample_tests', function () {
                 return [

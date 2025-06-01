@@ -24,6 +24,8 @@ import { Search, Plus, TestTube, Barcode, Edit } from 'lucide-react'; // Added E
 import { Checkbox } from "@/components/ui/checkbox"; // Assuming Checkbox component exists
 import { useQuery, useQueryClient } from '@tanstack/react-query'; // Import useQuery and useQueryClient
 import { searchPatients, getSamples, createSample, updateSample, deleteSample, getTests } from '@/lib/api'; // Import the new API call
+import axios from 'axios'; // Add this import if not present
+import { toast } from 'sonner'; // Add this import for toast error
 
 // Define the structure for a sample
 interface Sample {
@@ -46,15 +48,6 @@ interface Patient {
   id: string;
   name: string;
 }
-
-// Define available tests based on sample type
-const availableTests: { [key: string]: string[] } = {
-  Blood: ["Complete Blood Count", "Lipid Profile", "Liver Function", "Thyroid Panel", "Blood Culture"],
-  Urine: ["Urinalysis", "Urine Culture", "Drug Screen"],
-  Stool: ["Stool Culture", "Occult Blood Test"],
-  Sputum: ["Sputum Culture", "AFB Stain"],
-  Tissue: ["Histopathology", "Biopsy Culture"],
-};
 
 
 const Samples = () => {
@@ -104,7 +97,11 @@ const Samples = () => {
         collectionDate: sample.collection_date,
         collectionTime: sample.collection_time,
         // Always store test IDs (number[])
-        sample_tests: Array.isArray(sample.tests) ? sample.tests.map((t: any) => t.id ?? t) : [],
+        sample_tests: Array.isArray(sample.sample_tests)
+  ? sample.sample_tests
+  : Array.isArray(sample.tests)
+    ? sample.tests.map((t: any) => t.id ?? t)
+    : [],
         status: sample.status,
         priority: sample.priority,
         location: sample.location,
@@ -114,13 +111,27 @@ const Samples = () => {
     refetchOnWindowFocus: false
   });
 
-  // Fetch all tests for mapping names to IDs
-  const { data: testsResponse } = useQuery({
-    queryKey: ["tests"],
-    queryFn: async () => {
-      const response = await getTests();
-      return response.data.data;
-    },
+  // Fetch all tests for mapping names to IDs (fetch all pages)
+  const fetchAllTests = async () => {
+    let page = 1;
+    let allTests: any[] = [];
+    let totalPages = 1;
+
+    do {
+      const params = new URLSearchParams({ page: String(page) });
+      const response = await getTests(params);
+      const { data, meta } = response.data;
+      allTests = allTests.concat(data);
+      totalPages = meta.last_page;
+      page++;
+    } while (page <= totalPages);
+
+    return allTests;
+  };
+
+  const { data: testsResponse, isLoading: isTestsLoading } = useQuery({
+    queryKey: ["tests", "all"],
+    queryFn: fetchAllTests,
     refetchOnWindowFocus: false
   });
 
@@ -181,8 +192,13 @@ const Samples = () => {
     // Simple accession number generation (replace with proper logic)
     const newAccessionNumber = `ACC${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
 
-    // Map test names to IDs for backend
-    const testIds = getTestIdsByNames(formData.tests);
+    // Map test names to IDs for backend      // Convert test names to IDs and filter out any nulls
+      const testIds = getTestIdsByNames(formData.tests);
+
+    if (!testIds.length) {
+      toast.error("Please select at least one test");
+      return;
+    }
 
     // Prepare payload for backend
     const payload = {
@@ -195,7 +211,7 @@ const Samples = () => {
       status: 'Pending',
       location: formData.location || 'Unknown',
       notes: formData.notes,
-      tests: testIds, // Send IDs instead of names
+      tests: testIds // Send IDs instead of names
     };
 
     try {
@@ -239,7 +255,7 @@ const Samples = () => {
         tests: testIds, // Send IDs instead of names
       };
       try {
-        await updateSample(sample.id, payload); // If backend uses ID, replace with sample.id
+        await updateSample(sample.id.toString(), payload); // If backend uses ID, replace with sample.id
         await refetchSamples();
         setIsEditDialogOpen(false);
         setEditingSample(null);
@@ -320,9 +336,59 @@ const Samples = () => {
     setEditFormData(null); // Clear edit form data
   };
 
-  // Get tests available for the selected sample type
-  const testsForSelectedType = availableTests[formData.sampleType] || [];
+  // Add a mapping for sampleType values to match backend enum
+  const sampleTypeMapping: Record<string, string> = {
+    'Blood': 'Blood',
+    'Urine': 'Urine',
+    'Stool': 'Stool',
+    'Sputum': 'Sputum',
+    'Tissue': 'Tissue'
+  };
 
+  // Get tests available for the selected sample type
+  const testsForSelectedType = testsResponse
+    ? testsResponse.filter((test: any) => 
+        Array.isArray(test.sample_types) && 
+        test.sample_types.some((type: string) => 
+          type.toLowerCase().startsWith(formData.sampleType.toLowerCase())
+        )
+      )
+    : [];
+
+  // Get tests available for the edit form selected sample type
+  const testsForEditSelectedType = testsResponse && editFormData
+    ? testsResponse.filter((test: any) => 
+        Array.isArray(test.sample_types) && 
+        test.sample_types.some((type: string) => type === editFormData.sampleType)
+      )
+    : [];
+
+  // Group tests by sampleType
+  const groupedTests = testsResponse
+    ? testsResponse.reduce((acc: Record<string, any[]>, test: any) => {
+        if (Array.isArray(test.sample_types)) {
+          test.sample_types.forEach((type: string) => {
+            const mappedType = sampleTypeMapping[type] || type;
+            if (!acc[mappedType]) acc[mappedType] = [];
+            if (!acc[mappedType].includes(test)) {
+              acc[mappedType].push(test);
+            }
+          });
+        }
+        return acc;
+      }, {})
+    : {}; // Group tests by their sampleTypes
+
+  // Get unique sample types from the tests
+  const availableSampleTypes = testsResponse
+    ? [...new Set(testsResponse.flatMap((test: any) => 
+        Array.isArray(test.sample_types) ? test.sample_types : []
+      ))]
+        .map(type => ({
+          value: String(type),
+          label: sampleTypeMapping[String(type)] || String(type)
+        }))
+    : [];
 
   return (
     <div className="space-y-6">
@@ -408,8 +474,8 @@ const Samples = () => {
                     <SelectValue placeholder="Select sample type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.keys(availableTests).map(type => (
-                       <SelectItem key={type} value={type}>{type}</SelectItem>
+                    {Object.keys(sampleTypeMapping).map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -438,16 +504,16 @@ const Samples = () => {
               </div>
               <div className="space-y-2 col-span-2"> {/* Modified Tests Selection */}
                 <Label htmlFor="tests">Requested Tests</Label>
-                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2"> {/* Added scrollable container */}
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2">
                   {testsForSelectedType.length > 0 ? (
-                    testsForSelectedType.map(test => (
-                      <div key={test} className="flex items-center space-x-2">
+                    testsForSelectedType.map((test: any) => (
+                      <div key={test.id} className="flex items-center space-x-2">
                         <Checkbox
-                          id={`test-${test}`}
-                          checked={formData.tests.includes(test)}
-                          onCheckedChange={(isChecked) => handleTestChange(test, isChecked as boolean)}
+                          id={`test-${test.id}`}
+                          checked={formData.tests.includes(test.name)}
+                          onCheckedChange={(isChecked) => handleTestChange(test.name, isChecked as boolean)}
                         />
-                        <Label htmlFor={`test-${test}`}>{test}</Label>
+                        <Label htmlFor={`test-${test.id}`}>{test.name}</Label>
                       </div>
                     ))
                   ) : (
@@ -455,7 +521,7 @@ const Samples = () => {
                   )}
                 </div>
               </div>
-              <div className="space-y-2 col-span-2">
+              <div className="space-y-2 col-span-2"> {/* Notes Input */}
                 <Label htmlFor="notes">Collection Notes</Label>
                 <Input
                   id="notes"
@@ -496,8 +562,8 @@ const Samples = () => {
                       <SelectValue placeholder="Select sample type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.keys(availableTests).map(type => (
-                         <SelectItem key={type} value={type}>{type}</SelectItem>
+                      {Object.keys(sampleTypeMapping).map(type => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -545,15 +611,15 @@ const Samples = () => {
                  <div className="space-y-2 col-span-2"> {/* Modified Tests Selection */}
                   <Label htmlFor="editTests">Requested Tests</Label>
                   <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2"> {/* Added scrollable container */}
-                    {availableTests[editFormData.sampleType]?.length > 0 ? (
-                      availableTests[editFormData.sampleType].map(test => (
-                        <div key={test} className="flex items-center space-x-2">
+                    {testsForEditSelectedType.length > 0 ? (
+                      testsForEditSelectedType.map((test: any) => (
+                        <div key={test.id} className="flex items-center space-x-2">
                           <Checkbox
-                            id={`edit-test-${test}`}
-                            checked={editFormData.tests.includes(test)}
-                            onCheckedChange={(isChecked) => handleEditTestChange(test, isChecked as boolean)}
+                            id={`edit-test-${test.id}`}
+                            checked={editFormData.tests.includes(test.name)}
+                            onCheckedChange={(isChecked) => handleEditTestChange(test.name, isChecked as boolean)}
                           />
-                          <Label htmlFor={`edit-test-${test}`}>{test}</Label>
+                          <Label htmlFor={`edit-test-${test.id}`}>{test.name}</Label>
                         </div>
                       ))
                     ) : (
@@ -655,28 +721,42 @@ const Samples = () => {
                       <div className="text-sm text-gray-500">{sample.patientId}</div>
                     </div>
                   </TableCell>
-                  <TableCell>{sample.sampleType}</TableCell>
+                  <TableCell>{sampleTypeMapping[String(sample.sampleType)] || sample.sampleType}</TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      <div>{sample.collectionDate}</div>
-                      <div className="text-gray-500">{sample.collectionTime}</div>
+                      <div className="font-medium text-black">
+                        {sample.collectionDate && sample.collectionDate.length >= 10
+                          ? sample.collectionDate.slice(0, 10)
+                          : sample.collectionDate}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {sample.collectionTime && sample.collectionTime.length >= 5
+                          ? sample.collectionTime.slice(11, 16)
+                          : sample.collectionTime}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {/* Map sample_tests IDs to names using testsResponse */}
-                      {(Array.isArray(sample.sample_tests) ? sample.sample_tests : []).map((testId, index) => {
-                        let testName = String(testId);
-                        if (testsResponse) {
-                          const found = testsResponse.find((t: any) => t.id === testId);
-                          if (found) testName = found.name;
-                        }
-                        return (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {testName}
-                          </Badge>
-                        );
-                      })}
+                    <div className="flex flex-wrap gap-1 items-center">
+                      {Array.isArray(sample.sample_tests) && sample.sample_tests.length > 0 ? (
+                        Array.isArray(testsResponse) && testsResponse.length > 0 ? (
+                          sample.sample_tests.slice(0, 3).map((testId, index) => {
+                            const found = testsResponse.find((t: any) => String(t.id) === String(testId));
+                            return found ? (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {found.name}
+                              </Badge>
+                            ) : null; // Do not render anything if not found
+                          })
+                        ) : null
+                      ) : (
+                        <span className="text-gray-400 text-xs">
+                          No tests
+                        </span>
+                      )}
+                      {sample.sample_tests.length > 3 && (
+      <span className="text-xs text-gray-500">+{sample.sample_tests.length - 3}</span>
+    )}
                     </div>
                   </TableCell>
                   <TableCell>

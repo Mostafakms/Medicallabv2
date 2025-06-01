@@ -39,7 +39,7 @@ export const updateSampleTest = (sampleId: string, testId: string, data: any) =>
   api.put(`/samples/${sampleId}/tests/${testId}`, data);
 
 // Tests API
-export const getTests = () => api.get('/tests');
+export const getTests = (params?: URLSearchParams) => api.get('/tests', { params });
 export const getTest = (id: string) => api.get(`/tests/${id}`);
 export const createTest = (data: any) => api.post('/tests', data);
 export const updateTest = (id: string, data: any) => api.put(`/tests/${id}`, data);
