@@ -31,6 +31,7 @@ class Test extends Model
     public function samples(): BelongsToMany
     {
         return $this->belongsToMany(Sample::class, 'sample_tests')
+            ->using(\App\Models\SampleTest::class)
             ->withPivot(['status', 'results', 'notes'])
             ->withTimestamps();
     }

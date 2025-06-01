@@ -17,6 +17,7 @@ use App\Http\Controllers\TestController;
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 // Patient routes
+Route::get('patients/search', [PatientController::class, 'search']); // Moved patient search route above apiResource
 Route::apiResource('patients', PatientController::class);
 Route::get('patients/{patient}/samples', [PatientController::class, 'samples']);
 

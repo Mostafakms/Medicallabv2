@@ -8,6 +8,7 @@ use App\Http\Resources\PatientResource;
 use App\Http\Resources\SampleResource;
 use App\Models\Patient;
 use Illuminate\Http\Response;
+use Illuminate\Http\Request;
 
 class PatientController extends Controller
 {
@@ -89,5 +90,24 @@ class PatientController extends Controller
             ->paginate();
         
         return SampleResource::collection($samples);
+    }
+
+    /**
+     * Search for patients by name.
+     */
+    public function search(Request $request)
+    {
+        $searchTerm = $request->query('name');
+
+        if (!$searchTerm) {
+            return PatientResource::collection(Patient::paginate(10));
+        }
+
+        $patients = Patient::query()
+            ->where('name', 'LIKE', '%' . $searchTerm . '%')
+            ->limit(10)
+            ->get();
+
+        return PatientResource::collection($patients);
     }
 }

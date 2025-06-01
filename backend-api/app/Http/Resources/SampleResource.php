@@ -26,7 +26,8 @@ class SampleResource extends JsonResource
             'status' => $this->status,
             'location' => $this->location,
             'notes' => $this->notes,
-            'tests' => TestResource::collection($this->whenLoaded('tests')),
+            // Return test IDs for frontend mapping
+            'sample_tests' => $this->tests->pluck('id'),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

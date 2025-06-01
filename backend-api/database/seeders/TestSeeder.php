@@ -13,43 +13,492 @@ class TestSeeder extends Seeder
     public function run(): void
     {
         $tests = [
+            // --- Existing Tests ---
             [
                 'code' => 'CBC',
                 'name' => 'Complete Blood Count',
-                'sample_types' => ['Blood'],
+                'sample_types' => ['Blood (Whole, EDTA)'],
                 'category' => 'Hematology',
                 'department' => 'Laboratory',
                 'price' => 45.00,
                 'duration' => '2-4 hours',
                 'status' => 'Active',
-                'parameters' => ['RBC', 'WBC', 'Platelets', 'Hemoglobin', 'Hematocrit']
+                'parameters' => ['RBC', 'WBC', 'Platelets', 'Hemoglobin', 'Hematocrit', 'MCV', 'MCH', 'MCHC', 'RDW', 'Differential Count']
             ],
             [
                 'code' => 'LIP',
                 'name' => 'Lipid Profile',
-                'sample_types' => ['Blood'],
+                'sample_types' => ['Blood (Serum)'],
                 'category' => 'Clinical Chemistry',
                 'department' => 'Laboratory',
                 'price' => 35.00,
                 'duration' => '1-2 hours',
                 'status' => 'Active',
-                'parameters' => ['Total Cholesterol', 'HDL', 'LDL', 'Triglycerides']
+                'parameters' => ['Total Cholesterol', 'HDL Cholesterol', 'LDL Cholesterol (Calculated)', 'Triglycerides', 'VLDL Cholesterol (Calculated)']
             ],
             [
                 'code' => 'UA',
                 'name' => 'Urinalysis',
-                'sample_types' => ['Urine'],
+                'sample_types' => ['Urine (Random, Midstream)'],
                 'category' => 'Clinical Chemistry',
                 'department' => 'Laboratory',
                 'price' => 25.00,
-                'duration' => '30 minutes',
+                'duration' => '30 minutes - 1 hour',
                 'status' => 'Active',
-                'parameters' => ['pH', 'Protein', 'Glucose', 'Ketones', 'Blood', 'Leukocytes']
+                'parameters' => ['Color', 'Appearance', 'Specific Gravity', 'pH', 'Protein', 'Glucose', 'Ketones', 'Bilirubin', 'Urobilinogen', 'Nitrite', 'Leukocyte Esterase', 'Blood/Hemoglobin', 'Microscopic Examination (RBC, WBC, Epithelial cells, Casts, Crystals, Bacteria)']
+            ],
+
+            // --- New Tests ---
+
+            // Clinical Chemistry
+            [
+                'code' => 'LFT',
+                'name' => 'Liver Function Test',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 60.00,
+                'duration' => '2-4 hours',
+                'status' => 'Active',
+                'parameters' => ['Total Protein', 'Albumin', 'Globulin', 'A/G Ratio', 'Total Bilirubin', 'Direct Bilirubin', 'Indirect Bilirubin', 'ALT (SGPT)', 'AST (SGOT)', 'ALP (Alkaline Phosphatase)', 'GGT']
+            ],
+            [
+                'code' => 'KFT',
+                'name' => 'Kidney Function Test (Renal Panel)',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 55.00,
+                'duration' => '2-3 hours',
+                'status' => 'Active',
+                'parameters' => ['Urea (BUN)', 'Creatinine', 'Uric Acid', 'Sodium', 'Potassium', 'Chloride', 'eGFR (Calculated)']
+            ],
+            [
+                'code' => 'FBS',
+                'name' => 'Fasting Blood Sugar',
+                'sample_types' => ['Blood (Plasma, Fluoride Oxalate or Serum)'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 15.00,
+                'duration' => '1-2 hours',
+                'status' => 'Active',
+                'parameters' => ['Glucose']
+            ],
+            [
+                'code' => 'RBS',
+                'name' => 'Random Blood Sugar',
+                'sample_types' => ['Blood (Plasma, Fluoride Oxalate or Serum)'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 15.00,
+                'duration' => '1-2 hours',
+                'status' => 'Active',
+                'parameters' => ['Glucose']
+            ],
+            [
+                'code' => 'HBA1C',
+                'name' => 'Glycated Hemoglobin (HbA1c)',
+                'sample_types' => ['Blood (Whole, EDTA)'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 40.00,
+                'duration' => '4-6 hours',
+                'status' => 'Active',
+                'parameters' => ['HbA1c %', 'Estimated Average Glucose (eAG)']
+            ],
+            [
+                'code' => 'ELECTRO',
+                'name' => 'Electrolyte Panel',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 30.00,
+                'duration' => '1-2 hours',
+                'status' => 'Active',
+                'parameters' => ['Sodium (Na+)', 'Potassium (K+)', 'Chloride (Cl-)', 'Bicarbonate (HCO3- or Total CO2)']
+            ],
+            [
+                'code' => 'BMP',
+                'name' => 'Basic Metabolic Panel',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 70.00,
+                'duration' => '2-4 hours',
+                'status' => 'Active',
+                'parameters' => ['Glucose', 'Calcium', 'Sodium', 'Potassium', 'Chloride', 'Bicarbonate (CO2)', 'BUN (Urea)', 'Creatinine']
+            ],
+            [
+                'code' => 'CMP',
+                'name' => 'Comprehensive Metabolic Panel',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 95.00,
+                'duration' => '2-4 hours',
+                'status' => 'Active',
+                'parameters' => ['Glucose', 'Calcium', 'Sodium', 'Potassium', 'Chloride', 'Bicarbonate (CO2)', 'BUN (Urea)', 'Creatinine', 'Albumin', 'Total Protein', 'ALP', 'ALT', 'AST', 'Bilirubin (Total)']
+            ],
+             [
+                'code' => 'CA',
+                'name' => 'Calcium (Total)',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 20.00,
+                'duration' => '1-2 hours',
+                'status' => 'Active',
+                'parameters' => ['Calcium']
+            ],
+            [
+                'code' => 'AMY',
+                'name' => 'Amylase',
+                'sample_types' => ['Blood (Serum)', 'Urine'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 30.00,
+                'duration' => '2-3 hours',
+                'status' => 'Active',
+                'parameters' => ['Amylase Level']
+            ],
+            [
+                'code' => 'LIPASE',
+                'name' => 'Lipase',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Clinical Chemistry',
+                'department' => 'Laboratory',
+                'price' => 35.00,
+                'duration' => '2-3 hours',
+                'status' => 'Active',
+                'parameters' => ['Lipase Level']
+            ],
+
+            // Hematology
+            [
+                'code' => 'ESR',
+                'name' => 'Erythrocyte Sedimentation Rate',
+                'sample_types' => ['Blood (Whole, EDTA)'],
+                'category' => 'Hematology',
+                'department' => 'Laboratory',
+                'price' => 20.00,
+                'duration' => '1-2 hours',
+                'status' => 'Active',
+                'parameters' => ['ESR Value']
+            ],
+            [
+                'code' => 'PTINR',
+                'name' => 'Prothrombin Time & INR',
+                'sample_types' => ['Blood (Plasma, Citrate)'],
+                'category' => 'Coagulation', // Or Hematology
+                'department' => 'Laboratory',
+                'price' => 30.00,
+                'duration' => '1-3 hours',
+                'status' => 'Active',
+                'parameters' => ['Prothrombin Time (PT)', 'INR (International Normalized Ratio)']
+            ],
+            [
+                'code' => 'APTT',
+                'name' => 'Activated Partial Thromboplastin Time',
+                'sample_types' => ['Blood (Plasma, Citrate)'],
+                'category' => 'Coagulation', // Or Hematology
+                'department' => 'Laboratory',
+                'price' => 30.00,
+                'duration' => '1-3 hours',
+                'status' => 'Active',
+                'parameters' => ['APTT Value']
+            ],
+            [
+                'code' => 'BG',
+                'name' => 'Blood Grouping & Rh Typing',
+                'sample_types' => ['Blood (Whole, EDTA)'],
+                'category' => 'Immunohematology', // Or Hematology
+                'department' => 'Laboratory',
+                'price' => 25.00,
+                'duration' => '1-2 hours',
+                'status' => 'Active',
+                'parameters' => ['ABO Group', 'Rh (D) Type']
+            ],
+            [
+                'code' => 'RETIC',
+                'name' => 'Reticulocyte Count',
+                'sample_types' => ['Blood (Whole, EDTA)'],
+                'category' => 'Hematology',
+                'department' => 'Laboratory',
+                'price' => 28.00,
+                'duration' => '2-4 hours',
+                'status' => 'Active',
+                'parameters' => ['Reticulocyte Percentage', 'Absolute Reticulocyte Count']
+            ],
+
+            // Endocrinology
+            [
+                'code' => 'TSH',
+                'name' => 'Thyroid Stimulating Hormone',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Endocrinology',
+                'department' => 'Laboratory',
+                'price' => 40.00,
+                'duration' => '4-8 hours',
+                'status' => 'Active',
+                'parameters' => ['TSH Level']
+            ],
+            [
+                'code' => 'FT4',
+                'name' => 'Free Thyroxine (FT4)',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Endocrinology',
+                'department' => 'Laboratory',
+                'price' => 45.00,
+                'duration' => '4-8 hours',
+                'status' => 'Active',
+                'parameters' => ['Free T4 Level']
+            ],
+            [
+                'code' => 'FT3',
+                'name' => 'Free Triiodothyronine (FT3)',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Endocrinology',
+                'department' => 'Laboratory',
+                'price' => 45.00,
+                'duration' => '4-8 hours',
+                'status' => 'Active',
+                'parameters' => ['Free T3 Level']
+            ],
+             [
+                'code' => 'TFT',
+                'name' => 'Thyroid Function Panel',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Endocrinology',
+                'department' => 'Laboratory',
+                'price' => 110.00,
+                'duration' => '6-10 hours',
+                'status' => 'Active',
+                'parameters' => ['TSH Level', 'Free T4 Level', 'Free T3 Level']
+            ],
+            [
+                'code' => 'PRL',
+                'name' => 'Prolactin',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Endocrinology',
+                'department' => 'Laboratory',
+                'price' => 50.00,
+                'duration' => '1 day',
+                'status' => 'Active',
+                'parameters' => ['Prolactin Level']
+            ],
+            [
+                'code' => 'VITD',
+                'name' => 'Vitamin D (25-Hydroxy)',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Endocrinology', // Can also be Clinical Chemistry
+                'department' => 'Laboratory',
+                'price' => 75.00,
+                'duration' => '1-2 days',
+                'status' => 'Active',
+                'parameters' => ['25-OH Vitamin D Level']
+            ],
+
+            // Serology / Immunology
+            [
+                'code' => 'HIV',
+                'name' => 'HIV 1 & 2 Antibodies & p24 Antigen (4th Gen)',
+                'sample_types' => ['Blood (Serum or Plasma)'],
+                'category' => 'Immunology/Serology',
+                'department' => 'Laboratory',
+                'price' => 60.00,
+                'duration' => '1-2 days',
+                'status' => 'Active',
+                'parameters' => ['HIV-1 Ab', 'HIV-2 Ab', 'HIV p24 Ag', 'Overall Result']
+            ],
+            [
+                'code' => 'HBSAG',
+                'name' => 'Hepatitis B Surface Antigen (HBsAg)',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Immunology/Serology',
+                'department' => 'Laboratory',
+                'price' => 40.00,
+                'duration' => '4-8 hours',
+                'status' => 'Active',
+                'parameters' => ['HBsAg Result']
+            ],
+            [
+                'code' => 'HCV',
+                'name' => 'Hepatitis C Virus Antibody (Anti-HCV)',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Immunology/Serology',
+                'department' => 'Laboratory',
+                'price' => 45.00,
+                'duration' => '4-8 hours',
+                'status' => 'Active',
+                'parameters' => ['Anti-HCV Result']
+            ],
+            [
+                'code' => 'VDRL',
+                'name' => 'VDRL (Syphilis Test)',
+                'sample_types' => ['Blood (Serum)', 'CSF'],
+                'category' => 'Immunology/Serology',
+                'department' => 'Laboratory',
+                'price' => 25.00,
+                'duration' => '2-4 hours',
+                'status' => 'Active',
+                'parameters' => ['VDRL Reactivity', 'Titer (if reactive)']
+            ],
+            [
+                'code' => 'CRP',
+                'name' => 'C-Reactive Protein (Quantitative)',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Immunology/Serology', // or Clinical Chemistry
+                'department' => 'Laboratory',
+                'price' => 30.00,
+                'duration' => '2-4 hours',
+                'status' => 'Active',
+                'parameters' => ['CRP Level']
+            ],
+            [
+                'code' => 'RF',
+                'name' => 'Rheumatoid Factor (Quantitative)',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Immunology/Serology',
+                'department' => 'Laboratory',
+                'price' => 35.00,
+                'duration' => '4-6 hours',
+                'status' => 'Active',
+                'parameters' => ['RF Level']
+            ],
+             [
+                'code' => 'ASOT',
+                'name' => 'ASO Titre (Anti-Streptolysin O)',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Immunology/Serology',
+                'department' => 'Laboratory',
+                'price' => 30.00,
+                'duration' => '4-6 hours',
+                'status' => 'Active',
+                'parameters' => ['ASO Titre Level']
+            ],
+
+            // Microbiology
+            [
+                'code' => 'UC',
+                'name' => 'Urine Culture & Sensitivity',
+                'sample_types' => ['Urine (Midstream Clean Catch)'],
+                'category' => 'Microbiology',
+                'department' => 'Microbiology Lab',
+                'price' => 70.00,
+                'duration' => '2-3 days',
+                'status' => 'Active',
+                'parameters' => ['Organism(s) Identified', 'Colony Count', 'Antibiotic Sensitivity Profile']
+            ],
+            [
+                'code' => 'BC',
+                'name' => 'Blood Culture & Sensitivity',
+                'sample_types' => ['Blood (Whole, Special Culture Bottles)'],
+                'category' => 'Microbiology',
+                'department' => 'Microbiology Lab',
+                'price' => 120.00,
+                'duration' => '3-7 days',
+                'status' => 'Active',
+                'parameters' => ['Organism(s) Identified (if any)', 'Time to Positivity', 'Antibiotic Sensitivity Profile']
+            ],
+            [
+                'code' => 'SC',
+                'name' => 'Stool Culture & Sensitivity',
+                'sample_types' => ['Stool (Fresh)'],
+                'category' => 'Microbiology',
+                'department' => 'Microbiology Lab',
+                'price' => 80.00,
+                'duration' => '3-5 days',
+                'status' => 'Active',
+                'parameters' => ['Pathogen(s) Identified (e.g., Salmonella, Shigella, Campylobacter)', 'Antibiotic Sensitivity Profile']
+            ],
+            [
+                'code' => 'GRAM',
+                'name' => 'Gram Stain',
+                'sample_types' => ['Swab (Wound, Throat, etc.)', 'Sputum', 'CSF', 'Body Fluids'],
+                'category' => 'Microbiology',
+                'department' => 'Microbiology Lab',
+                'price' => 20.00,
+                'duration' => '1-2 hours',
+                'status' => 'Active',
+                'parameters' => ['Gram Reaction (Positive/Negative)', 'Morphology (Cocci/Bacilli)', 'Presence of WBCs', 'Presence of Epithelial Cells']
+            ],
+            [
+                'code' => 'AFB',
+                'name' => 'AFB Stain (Acid-Fast Bacilli)',
+                'sample_types' => ['Sputum', 'Body Fluids', 'Tissue Biopsy'],
+                'category' => 'Microbiology',
+                'department' => 'Microbiology Lab',
+                'price' => 35.00,
+                'duration' => '2-4 hours (smear), 4-8 weeks (culture)',
+                'status' => 'Active',
+                'parameters' => ['Presence of AFB', 'Quantification (if positive)']
+            ],
+
+            // Miscellaneous / Other
+            [
+                'code' => 'SF',
+                'name' => 'Semen Analysis (Fertility)',
+                'sample_types' => ['Semen (Fresh, collected within 1 hour)'],
+                'category' => 'Andrology', // Or Specialized Lab
+                'department' => 'Specialized Lab',
+                'price' => 100.00,
+                'duration' => '2-4 hours',
+                'status' => 'Active',
+                'parameters' => ['Volume', 'pH', 'Sperm Concentration', 'Motility', 'Morphology', 'Vitality', 'WBC Count']
+            ],
+            [
+                'code' => 'DDIMER',
+                'name' => 'D-Dimer',
+                'sample_types' => ['Blood (Plasma, Citrate)'],
+                'category' => 'Coagulation',
+                'department' => 'Laboratory',
+                'price' => 65.00,
+                'duration' => '2-4 hours',
+                'status' => 'Active',
+                'parameters' => ['D-Dimer Level']
+            ],
+            [
+                'code' => 'FERRITIN',
+                'name' => 'Ferritin',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Hematology', // or Clinical Chemistry
+                'department' => 'Laboratory',
+                'price' => 45.00,
+                'duration' => '1 day',
+                'status' => 'Active',
+                'parameters' => ['Ferritin Level']
+            ],
+            [
+                'code' => 'IRONPROFILE',
+                'name' => 'Iron Profile',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Hematology', // or Clinical Chemistry
+                'department' => 'Laboratory',
+                'price' => 70.00,
+                'duration' => '1 day',
+                'status' => 'Active',
+                'parameters' => ['Serum Iron', 'TIBC (Total Iron Binding Capacity)', 'Transferrin Saturation %', 'Ferritin (often included)']
+            ],
+            [
+                'code' => 'PSA',
+                'name' => 'Prostate-Specific Antigen (Total)',
+                'sample_types' => ['Blood (Serum)'],
+                'category' => 'Tumor Markers', // Or Clinical Chemistry/Endocrinology
+                'department' => 'Laboratory',
+                'price' => 55.00,
+                'duration' => '6-12 hours',
+                'status' => 'Active',
+                'parameters' => ['Total PSA Level']
             ],
         ];
 
-        foreach ($tests as $test) {
-            Test::create($test);
+        foreach ($tests as $testData) {
+            // Check if 'code_' exists and rename it to 'code'
+            if (array_key_exists('code_', $testData)) {
+                $testData['code'] = $testData['code_'];
+                unset($testData['code_']);
+            }
+            Test::create($testData);
         }
     }
 }

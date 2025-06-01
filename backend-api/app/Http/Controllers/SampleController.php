@@ -9,6 +9,7 @@ use App\Http\Resources\TestResource;
 use App\Models\Sample;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 
 class SampleController extends Controller
 {
@@ -28,13 +29,22 @@ class SampleController extends Controller
      */
     public function store(StoreSampleRequest $request)
     {
+        Log::info('StoreSampleRequest received', $request->all());
         $sample = Sample::create($request->validated());
-        
         if ($request->has('tests')) {
-            $sample->tests()->attach($request->tests);
+            $syncData = [];
+            foreach ($request->tests as $testId) {
+                $syncData[$testId] = [
+                    'status' => 'Pending',
+                    'results' => null,
+                    'notes' => null,
+                ];
+            }
+            Log::info('Syncing tests with data', $syncData);
+            $sample->tests()->sync($syncData);
         }
-        
         $sample->load(['patient', 'tests']);
+        Log::info('Sample after sync', $sample->toArray());
         return new SampleResource($sample);
     }
 
@@ -52,8 +62,22 @@ class SampleController extends Controller
      */
     public function update(UpdateSampleRequest $request, Sample $sample)
     {
+        Log::info('UpdateSampleRequest received', $request->all());
         $sample->update($request->validated());
+        if ($request->has('tests')) {
+            $syncData = [];
+            foreach ($request->tests as $testId) {
+                $syncData[$testId] = [
+                    'status' => 'Pending',
+                    'results' => null,
+                    'notes' => null,
+                ];
+            }
+            Log::info('Syncing tests with data', $syncData);
+            $sample->tests()->sync($syncData);
+        }
         $sample->load(['patient', 'tests']);
+        Log::info('Sample after sync', $sample->toArray());
         
         return new SampleResource($sample);
     }

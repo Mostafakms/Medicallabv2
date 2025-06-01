@@ -25,6 +25,7 @@ export const createPatient = (data: any) => api.post('/patients', data);
 export const updatePatient = (id: string, data: any) => api.put(`/patients/${id}`, data);
 export const deletePatient = (id: string) => api.delete(`/patients/${id}`);
 export const getPatientSamples = (id: string) => api.get(`/patients/${id}/samples`);
+export const searchPatients = (name: string) => api.get(`/patients/search?name=${name}`); // Added searchPatients API call
 
 // Samples API
 export const getSamples = () => api.get('/samples');
