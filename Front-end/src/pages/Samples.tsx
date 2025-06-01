@@ -279,6 +279,161 @@ const Samples = () => {
     }
   };
 
+  // --- SampleForm component for both Receive and Edit dialogs ---
+  interface SampleFormProps {
+    formData: any;
+    onInputChange: (field: string, value: string | string[]) => void;
+    onTestChange: (testName: string, isChecked: boolean) => void;
+    testsForSelectedType: any[];
+    patientSearchTerm?: string;
+    setPatientSearchTerm?: (v: string) => void;
+    patientSearchResults?: Patient[];
+    isPatientSearching?: boolean;
+    onPatientSelect?: (p: Patient) => void;
+    isEdit?: boolean;
+  }
+  const SampleForm: React.FC<SampleFormProps> = ({
+    formData,
+    onInputChange,
+    onTestChange,
+    testsForSelectedType,
+    patientSearchTerm = '',
+    setPatientSearchTerm,
+    patientSearchResults = [],
+    isPatientSearching = false,
+    onPatientSelect,
+    isEdit = false,
+  }) => (
+    <div className="grid grid-cols-2 gap-4 py-4">
+      <div className="space-y-2"> {/* Patient ID Input */}
+        <Label htmlFor={isEdit ? 'editPatientId' : 'patientId'}>Patient ID</Label>
+        <Input
+          id={isEdit ? 'editPatientId' : 'patientId'}
+          value={formData.patientId}
+          onChange={(e) => onInputChange('patientId', e.target.value)}
+          placeholder="Enter or scan patient ID"
+          disabled
+        />
+      </div>
+      <div className="space-y-2"> {/* Patient Name Input */}
+        <Label htmlFor={isEdit ? 'editPatientName' : 'patientName'}>Patient Name</Label>
+        <Input
+          id={isEdit ? 'editPatientName' : 'patientName'}
+          value={isEdit ? formData.patientName : (patientSearchTerm || formData.patientName)}
+          onChange={(e) => isEdit
+            ? onInputChange('patientName', e.target.value)
+            : setPatientSearchTerm && setPatientSearchTerm(e.target.value)
+          }
+          placeholder={isEdit ? 'Enter patient name' : 'Search or enter patient name'}
+        />
+        {/* Only show patient search results in receive mode */}
+        {!isEdit && setPatientSearchTerm && patientSearchTerm.length > 1 && (
+          <>
+            {patientSearchResults && patientSearchResults.length > 0 && (
+              <div className="border rounded-md max-h-40 overflow-y-auto">
+                {patientSearchResults.map(patient => (
+                  <div
+                    key={patient.id}
+                    className="p-2 cursor-pointer hover:bg-gray-100"
+                    onClick={() => onPatientSelect && onPatientSelect(patient)}
+                  >
+                    {patient.name} ({patient.id})
+                  </div>
+                ))}
+              </div>
+            )}
+            {isPatientSearching && (
+              <div className="p-2 text-gray-500">Searching...</div>
+            )}
+            {!isPatientSearching && patientSearchResults?.length === 0 && (
+              <div className="p-2 text-gray-500">No patients found.</div>
+            )}
+          </>
+        )}
+      </div>
+      <div className="space-y-2 col-span-2"> {/* Collection Date and Time */}
+        <Label>Collection Date & Time</Label>
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            id={isEdit ? 'editCollectionDate' : 'collectionDate'}
+            type="date"
+            value={formData.collectionDate}
+            onChange={(e) => onInputChange('collectionDate', e.target.value)}
+          />
+          <Input
+            id={isEdit ? 'editCollectionTime' : 'collectionTime'}
+            type="time"
+            value={formData.collectionTime}
+            onChange={(e) => onInputChange('collectionTime', e.target.value)}
+          />
+        </div>
+      </div>
+      <div className="space-y-2"> {/* Sample Type Input */}
+        <Label htmlFor={isEdit ? 'editSampleType' : 'sampleType'}>Sample Type</Label>
+        <Select value={formData.sampleType} onValueChange={(value) => onInputChange('sampleType', value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select sample type" />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.keys(sampleTypeMapping).map(type => (
+              <SelectItem key={type} value={type}>{type}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2"> {/* Priority Input */}
+        <Label htmlFor={isEdit ? 'editPriority' : 'priority'}>Priority</Label>
+        <Select value={formData.priority} onValueChange={(value) => onInputChange('priority', value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select priority" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Stat">Stat</SelectItem>
+            <SelectItem value="Urgent">Urgent</SelectItem>
+            <SelectItem value="Normal">Normal</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2"> {/* Location Input */}
+        <Label htmlFor={isEdit ? 'editLocation' : 'location'}>Location</Label>
+        <Input
+          id={isEdit ? 'editLocation' : 'location'}
+          value={formData.location}
+          onChange={(e) => onInputChange('location', e.target.value)}
+          placeholder="Enter sample location"
+        />
+      </div>
+      <div className="space-y-2 col-span-2"> {/* Tests Selection */}
+        <Label htmlFor={isEdit ? 'editTests' : 'tests'}>Requested Tests</Label>
+        <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2">
+          {testsForSelectedType.length > 0 ? (
+            testsForSelectedType.map((test: any) => (
+              <div key={test.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`${isEdit ? 'edit-' : ''}test-${test.id}`}
+                  checked={formData.tests.includes(test.name)}
+                  onCheckedChange={(isChecked) => onTestChange(test.name, isChecked as boolean)}
+                />
+                <Label htmlFor={`${isEdit ? 'edit-' : ''}test-${test.id}`}>{test.name}</Label>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500 col-span-2">Select a sample type to see available tests.</p>
+          )}
+        </div>
+      </div>
+      <div className="space-y-2 col-span-2"> {/* Notes Input */}
+        <Label htmlFor={isEdit ? 'editNotes' : 'notes'}>Collection Notes</Label>
+        <Input
+          id={isEdit ? 'editNotes' : 'notes'}
+          value={formData.notes}
+          onChange={(e) => onInputChange('notes', e.target.value)}
+          placeholder="Any special instructions or notes"
+        />
+      </div>
+    </div>
+  );
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Completed": return "bg-green-100 text-green-800";
@@ -350,7 +505,7 @@ const Samples = () => {
     ? testsResponse.filter((test: any) => 
         Array.isArray(test.sample_types) && 
         test.sample_types.some((type: string) => 
-          type.toLowerCase().startsWith(formData.sampleType.toLowerCase())
+          type.trim().toLowerCase().startsWith(formData.sampleType.trim().toLowerCase())
         )
       )
     : [];
@@ -359,7 +514,9 @@ const Samples = () => {
   const testsForEditSelectedType = testsResponse && editFormData
     ? testsResponse.filter((test: any) => 
         Array.isArray(test.sample_types) && 
-        test.sample_types.some((type: string) => type === editFormData.sampleType)
+        test.sample_types.some((type: string) => 
+          type.trim().toLowerCase().startsWith(editFormData.sampleType.trim().toLowerCase())
+        )
       )
     : [];
 
@@ -409,128 +566,18 @@ const Samples = () => {
             <DialogHeader>
               <DialogTitle>Receive New Sample</DialogTitle>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-4 py-4">
-              <div className="space-y-2"> {/* Patient ID Input */}
-                <Label htmlFor="patientId">Patient ID</Label>
-                <Input
-                  id="patientId"
-                  value={formData.patientId}
-                  onChange={(e) => handleInputChange('patientId', e.target.value)}
-                  placeholder="Enter or scan patient ID"
-                  disabled // Disable manual input since it will be populated from search
-                />
-              </div>
-               <div className="space-y-2"> {/* Patient Name Input */}
-                <Label htmlFor="patientName">Patient Name</Label>
-                <Input
-                  id="patientName"
-                  value={patientSearchTerm || formData.patientName} // Use search term or form data
-                  onChange={(e) => setPatientSearchTerm(e.target.value)} // Update patient search term
-                  placeholder="Search or enter patient name"
-                />
-                {/* Display search results */}
-                {patientSearchTerm.length > 1 && patientSearchResults && patientSearchResults.length > 0 && ( // Only show results if searching and results exist
-                  <div className="border rounded-md max-h-40 overflow-y-auto">
-                    {patientSearchResults.map(patient => (
-                      <div
-                        key={patient.id} // Use patient.id as key
-                        className="p-2 cursor-pointer hover:bg-gray-100"
-                        onClick={() => handlePatientSelect(patient)}
-                      >
-                        {patient.name} ({patient.id}) {/* Display patient name and ID */}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                 {patientSearchTerm.length > 1 && isPatientSearching && ( // Show loading indicator
-                  <div className="p-2 text-gray-500">Searching...</div>
-                )}
-                 {patientSearchTerm.length > 1 && !isPatientSearching && patientSearchResults?.length === 0 && ( // Show no results message
-                  <div className="p-2 text-gray-500">No patients found.</div>
-                )}
-              </div>
-              {/* Combined Collection Date and Time Input */}
-              <div className="space-y-2 col-span-2"> 
-                <Label>Collection Date & Time</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    id="collectionDate"
-                    type="date"
-                    value={formData.collectionDate}
-                    onChange={(e) => handleInputChange('collectionDate', e.target.value)}
-                  />
-                  <Input
-                    id="collectionTime"
-                    type="time"
-                    value={formData.collectionTime}
-                    onChange={(e) => handleInputChange('collectionTime', e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2"> {/* Sample Type Input */}
-                <Label htmlFor="sampleType">Sample Type</Label>
-                <Select value={formData.sampleType} onValueChange={(value) => handleInputChange('sampleType', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select sample type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.keys(sampleTypeMapping).map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="priority">Priority</Label>
-                <Select value={formData.priority} onValueChange={(value) => handleInputChange('priority', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Stat">Stat</SelectItem> {/* Use capitalized values */}
-                    <SelectItem value="Urgent">Urgent</SelectItem>
-                    <SelectItem value="Normal">Normal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-               <div className="space-y-2"> {/* Added Location Input */}
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  placeholder="Enter sample location"
-                />
-              </div>
-              <div className="space-y-2 col-span-2"> {/* Modified Tests Selection */}
-                <Label htmlFor="tests">Requested Tests</Label>
-                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2">
-                  {testsForSelectedType.length > 0 ? (
-                    testsForSelectedType.map((test: any) => (
-                      <div key={test.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`test-${test.id}`}
-                          checked={formData.tests.includes(test.name)}
-                          onCheckedChange={(isChecked) => handleTestChange(test.name, isChecked as boolean)}
-                        />
-                        <Label htmlFor={`test-${test.id}`}>{test.name}</Label>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500 col-span-2">Select a sample type to see available tests.</p>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-2 col-span-2"> {/* Notes Input */}
-                <Label htmlFor="notes">Collection Notes</Label>
-                <Input
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
-                  placeholder="Any special instructions or notes"
-                />
-              </div>
-            </div>
+            <SampleForm
+              formData={formData}
+              onInputChange={handleInputChange}
+              onTestChange={handleTestChange}
+              testsForSelectedType={testsForSelectedType}
+              patientSearchTerm={patientSearchTerm}
+              setPatientSearchTerm={setPatientSearchTerm}
+              patientSearchResults={patientSearchResults}
+              isPatientSearching={isPatientSearching}
+              onPatientSelect={handlePatientSelect}
+              isEdit={false}
+            />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button onClick={handleSubmit}>Receive Sample</Button>
@@ -545,102 +592,17 @@ const Samples = () => {
               <DialogTitle>Edit Sample</DialogTitle>
             </DialogHeader>
             {editFormData && (
-              <div className="grid grid-cols-2 gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="editAccessionNumber">Accession #</Label>
-                  <Input id="editAccessionNumber" value={editFormData.accessionNumber} disabled />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editPatientName">Patient Name</Label>
-                  <Input id="editPatientName" value={editFormData.patientName} disabled />
-                </div>
-                {/* Add other fields for editing */}
-                 <div className="space-y-2"> {/* Sample Type Input */}
-                  <Label htmlFor="editSampleType">Sample Type</Label>
-                  <Select value={editFormData.sampleType} onValueChange={(value) => handleEditInputChange('sampleType', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select sample type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.keys(sampleTypeMapping).map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {/* Combined Collection Date and Time Input */}
-                <div className="space-y-2 col-span-2"> 
-                  <Label>Collection Date & Time</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      id="editCollectionDate"
-                      type="date"
-                      value={editFormData.collectionDate}
-                      onChange={(e) => handleEditInputChange('collectionDate', e.target.value)}
-                    />
-                    <Input
-                      id="editCollectionTime"
-                      type="time"
-                      value={editFormData.collectionTime}
-                      onChange={(e) => handleEditInputChange('collectionTime', e.target.value)}
-                    />
-                  </div>
-                </div>
-                 <div className="space-y-2"> {/* Added Location Input */}
-                  <Label htmlFor="editLocation">Location</Label>
-                  <Input
-                    id="editLocation"
-                    value={editFormData.location}
-                    onChange={(e) => handleEditInputChange('location', e.target.value)}
-                    placeholder="Enter sample location"
-                  />
-                </div>
-                 <div className="space-y-2"> {/* Priority Input */}
-                  <Label htmlFor="editPriority">Priority</Label>
-                  <Select value={editFormData.priority} onValueChange={(value) => handleEditInputChange('priority', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Stat">Stat</SelectItem> {/* Use capitalized values */}
-                      <SelectItem value="Urgent">Urgent</SelectItem>
-                      <SelectItem value="Normal">Normal</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                 <div className="space-y-2 col-span-2"> {/* Modified Tests Selection */}
-                  <Label htmlFor="editTests">Requested Tests</Label>
-                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2"> {/* Added scrollable container */}
-                    {testsForEditSelectedType.length > 0 ? (
-                      testsForEditSelectedType.map((test: any) => (
-                        <div key={test.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`edit-test-${test.id}`}
-                            checked={editFormData.tests.includes(test.name)}
-                            onCheckedChange={(isChecked) => handleEditTestChange(test.name, isChecked as boolean)}
-                          />
-                          <Label htmlFor={`edit-test-${test.id}`}>{test.name}</Label>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-500 col-span-2">Select a sample type to see available tests.</p>
-                    )}
-                  </div>
-                </div>
-                 <div className="space-y-2 col-span-2"> {/* Notes Input */}
-                  <Label htmlFor="editNotes">Collection Notes</Label>
-                  <Input
-                    id="editNotes"
-                    value={editFormData.notes || ''}
-                    onChange={(e) => handleEditInputChange('notes', e.target.value)}
-                    placeholder="Any special instructions or notes"
-                  />
-                </div>
-              </div>
+              <SampleForm
+                formData={editFormData}
+                onInputChange={handleEditInputChange}
+                onTestChange={handleEditTestChange}
+                testsForSelectedType={testsForEditSelectedType}
+                isEdit={true}
+              />
             )}
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={handleEditDialogClose}>Cancel</Button>
-              <Button onClick={handleSaveEdit}>Save Changes</Button> {/* Added Save button */}
+              <Button onClick={handleSaveEdit}>Save Changes</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -721,7 +683,27 @@ const Samples = () => {
                       <div className="text-sm text-gray-500">{sample.patientId}</div>
                     </div>
                   </TableCell>
-                  <TableCell>{sampleTypeMapping[String(sample.sampleType)] || sample.sampleType}</TableCell>
+                  <TableCell>{
+  (() => {
+    if (!Array.isArray(sample.sample_tests) || !Array.isArray(testsResponse)) return sample.sampleType;
+    // Get all base sample_types from the sample's tests
+    const typesSet = new Set<string>();
+    sample.sample_tests.forEach((testId: number) => {
+      const found = testsResponse.find((t: any) => String(t.id) === String(testId));
+      if (found && Array.isArray(found.sample_types)) {
+        found.sample_types.forEach((type: string) => {
+          // Only use the base type (first word, lowercased)
+          const base = type.split(/\s|\(/)[0].toLowerCase();
+          typesSet.add(base);
+        });
+      }
+    });
+    const typesArr = Array.from(typesSet).map(type => type.charAt(0).toUpperCase() + type.slice(1));
+    return typesArr.length > 0
+      ? typesArr.join(', ')
+      : (sampleTypeMapping[String(sample.sampleType)] || sample.sampleType);
+  })()
+}</TableCell>
                   <TableCell>
                     <div className="text-sm">
                       <div className="font-medium text-black">
@@ -772,8 +754,8 @@ const Samples = () => {
                   <TableCell className="text-sm">{sample.location}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleEditClick(sample)}> {/* Added onClick handler */}
-                        <Edit className="h-4 w-4" /> {/* Added Edit button */}
+                      <Button variant="ghost" size="sm" onClick={() => handleEditClick(sample)}>
+                        <Edit className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="sm">
                         <TestTube className="h-4 w-4" /> {/* Kept Test Tube button */}
