@@ -99,6 +99,12 @@ class SampleController extends Controller
         return TestResource::collection($sample->tests);
     }
 
+    Public function showByAccession($accession_number)
+    {
+        $sample = Sample::where('accession_number', $accession_number)->firstOrFail();
+        $sample->load(['patient', 'tests']);
+        return new SampleResource($sample);
+    }
     /**
      * Add tests to the specified sample.
      */

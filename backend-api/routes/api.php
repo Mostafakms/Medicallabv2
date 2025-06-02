@@ -26,6 +26,7 @@ Route::apiResource('samples', SampleController::class);
 Route::get('samples/{sample}/tests', [SampleController::class, 'tests']);
 Route::post('samples/{sample}/tests', [SampleController::class, 'addTests']);
 Route::put('samples/{sample}/tests/{test}', [SampleController::class, 'updateTest']);
+Route::get('samples/accession/{accession_number}', [SampleController::class, 'showByAccession']);
 
 // Test routes
 Route::apiResource('tests', TestController::class);

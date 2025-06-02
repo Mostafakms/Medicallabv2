@@ -81,13 +81,15 @@ const Tests = () => {
         if (filters.usage === 'active') params.append('usage', 'active');
         if (filters.category !== 'all') params.append('category', filters.category);
         if (filters.status !== 'all') params.append('status', filters.status);
-        
+
         const response = await api.getTests(params);
+        console.log("API Response:", response); // Log API response
         if (!response?.data?.data) {
           throw new Error("Invalid response format from server");
         }
         return response.data.data;
       } catch (err: any) {
+        console.error("API Error:", err); // Log API error
         const message = err.response?.data?.message || err.message || "Failed to fetch tests";
         toast.error(message);
         throw new Error(message);
@@ -97,17 +99,19 @@ const Tests = () => {
     refetchOnWindowFocus: false
   });
 
-  // Transform test data safely
+  // Update the transformation logic for the `parameters` field to extract only parameter names
   const testsData = React.useMemo(() => {
     if (!Array.isArray(testsResponse)) return [];
-    
+
     return testsResponse.map((test: any) => ({
       id: test?.id || '',
       name: test?.name || '',
       code: test?.code || '',
       category: test?.category || '',
       department: test?.department || '',
-      parameters: Array.isArray(test?.parameters) ? test?.parameters : [],
+      parameters: Array.isArray(test?.parameters)
+        ? test.parameters.map((param: any) => typeof param === 'object' && param.name ? param.name : param)
+        : [],
       sample_types: Array.isArray(test?.sample_types) ? test?.sample_types : [],
       price: typeof test?.price === 'number' ? test?.price : 0,
       status: test?.status || 'unknown',
@@ -115,6 +119,10 @@ const Tests = () => {
       samples_count: typeof test?.samples_count === 'number' ? test?.samples_count : 0
     }));
   }, [testsResponse]);
+
+  // Add logging to debug the white page issue
+  console.log("Tests Response:", testsResponse);
+  console.log("Transformed Tests Data:", testsData);
 
   // Filter tests safely
   const filteredTests = React.useMemo(() => {
@@ -145,11 +153,19 @@ const Tests = () => {
   // Handle error state
   if (isError) {
     return (
-      <ErrorState 
-        error={error instanceof Error ? error : new Error("An error occurred while fetching tests")}
-        queryKey={["tests"]}
-        queryClient={queryClient}
-      />
+      <div className="text-center text-red-500 py-8">
+        <p>An error occurred while fetching tests.</p>
+        <p>{error instanceof Error ? error.message : "Unknown error"}</p>
+      </div>
+    );
+  }
+
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <div className="text-center text-gray-500 py-8">
+        <p>Loading tests...</p>
+      </div>
     );
   }
 
@@ -430,7 +446,7 @@ const Tests = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredTests.length === 0 && !isLoading ? (
+          {filteredTests.length === 0 ? (
             <div className="text-center text-gray-500 py-8">No tests found.</div>
           ) : (
             <Table>
@@ -443,67 +459,21 @@ const Tests = () => {
                   <TableHead>Price</TableHead>
                   <TableHead>Duration</TableHead>
                   <TableHead>Parameters</TableHead>
-                  <TableHead>Usage</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={10} className="text-center">Loading...</TableCell>
-                  </TableRow>
-                ) : filteredTests.map((test: any) => (
+                {filteredTests.map((test) => (
                   <TableRow key={test.id}>
-                    <TableCell className="font-medium">{test.code}</TableCell>
+                    <TableCell>{test.code}</TableCell>
                     <TableCell>{test.name}</TableCell>
-                    <TableCell>
-                      {Array.isArray(test.sample_types) 
-                        ? test.sample_types.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ') 
-                        : '-'
-                      }
-                    </TableCell>
+                    <TableCell>{test.sample_types.join(', ')}</TableCell>
                     <TableCell>{test.category}</TableCell>
-                    <TableCell>${(test.price || 0).toFixed(2)}</TableCell>
+                    <TableCell>${test.price.toFixed(2)}</TableCell>
                     <TableCell>{test.duration}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {Array.isArray(test.parameters) ? (
-                          <>
-                            {test.parameters.slice(0, 2).map((param, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                {param}
-                              </Badge>
-                            ))}
-                            {test.parameters.length > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{test.parameters.length - 2} more
-                              </Badge>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-gray-500">-</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {test.samples_count > 0 ? (
-                        <Badge className="bg-green-100 text-green-800">
-                          {test.samples_count} Sample{test.samples_count !== 1 ? 's' : ''}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-gray-500">
-                          Not in use
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        className={test.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}
-                      >
-                        {(test.status || 'unknown').charAt(0).toUpperCase() + (test.status || 'unknown').slice(1)}
-                      </Badge>
-                    </TableCell>
+                    <TableCell>{test.parameters.join(', ')}</TableCell>
+                    <TableCell>{test.status}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button variant="ghost" size="sm">

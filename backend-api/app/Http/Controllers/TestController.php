@@ -42,7 +42,7 @@ class TestController extends Controller
             $query->where('status', $request->status);
         }
 
-        $tests = $query->paginate();
+        $tests = $query->get(); // Fetch all tests without pagination
         return TestResource::collection($tests);
     }
 

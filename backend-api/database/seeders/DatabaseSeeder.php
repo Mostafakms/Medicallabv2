@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PatientSeeder::class,
             TestSeeder::class,
+            TestParameterSeeder::class,
             SampleSeeder::class,
         ]);
     }

@@ -11,16 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tests', function (Blueprint $table) {
+        Schema::create('test_parameters', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
+            $table->foreignId('test_id')->constrained()->onDelete('cascade');
             $table->string('name');
-            $table->json('sample_types');
-            $table->string('category');
-            $table->string('department');
-            $table->decimal('price', 8, 2);
-            $table->string('duration');
-            $table->enum('status', ['Active', 'Inactive'])->default('Active');
+            $table->string('units')->nullable();
+            $table->string('normal_range')->nullable();
+            $table->integer('order');
             $table->timestamps();
         });
     }
@@ -30,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tests');
+        Schema::dropIfExists('test_parameters');
     }
 };

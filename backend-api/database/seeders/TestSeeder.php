@@ -755,12 +755,85 @@ class TestSeeder extends Seeder
         ];
 
         foreach ($tests as $testData) {
-            // Check if 'code_' exists and rename it to 'code'
-            if (array_key_exists('code_', $testData)) {
-                $testData['code'] = $testData['code_'];
-                unset($testData['code_']);
+            // Extract parameters before creating the test
+            $parameters = $testData['parameters'] ?? [];
+            unset($testData['parameters']);
+
+            // Create the test
+            $test = Test::create($testData);
+
+            // Parameter units and ranges mapping
+            $parameterDetails = [
+                // CBC parameters
+                'RBC' => ['units' => '×10^6/µL', 'normal_range' => '4.5-5.9'],
+                'WBC' => ['units' => '×10^3/µL', 'normal_range' => '4.5-11.0'],
+                'Platelets' => ['units' => '×10^3/µL', 'normal_range' => '150-450'],
+                'Hemoglobin' => ['units' => 'g/dL', 'normal_range' => '13.5-17.5 (M), 12.0-15.5 (F)'],
+                'Hematocrit' => ['units' => '%', 'normal_range' => '41-50 (M), 36-48 (F)'],
+                'MCV' => ['units' => 'fL', 'normal_range' => '80-100'],
+                'MCH' => ['units' => 'pg', 'normal_range' => '27-31'],
+                'MCHC' => ['units' => 'g/dL', 'normal_range' => '32-36'],
+                'RDW' => ['units' => '%', 'normal_range' => '11.5-14.5'],
+
+                // Lipid Profile parameters
+                'Total Cholesterol' => ['units' => 'mg/dL', 'normal_range' => '<200'],
+                'HDL Cholesterol' => ['units' => 'mg/dL', 'normal_range' => '>40'],
+                'LDL Cholesterol (Calculated)' => ['units' => 'mg/dL', 'normal_range' => '<130'],
+                'Triglycerides' => ['units' => 'mg/dL', 'normal_range' => '<150'],
+                'VLDL Cholesterol (Calculated)' => ['units' => 'mg/dL', 'normal_range' => '<30'],
+
+                // Urinalysis parameters
+                'pH' => ['units' => '', 'normal_range' => '4.5-8'],
+                'Specific Gravity' => ['units' => '', 'normal_range' => '1.005-1.030'],
+                'Protein' => ['units' => '', 'normal_range' => 'Negative'],
+                'Glucose' => ['units' => '', 'normal_range' => 'Negative'],
+                'Ketones' => ['units' => '', 'normal_range' => 'Negative'],
+                'Blood' => ['units' => '', 'normal_range' => 'Negative'],
+                'Leukocytes' => ['units' => '', 'normal_range' => 'Negative'],
+
+                // Liver Function Test parameters
+                'Total Protein' => ['units' => 'g/dL', 'normal_range' => '6.0-8.3'],
+                'Albumin' => ['units' => 'g/dL', 'normal_range' => '3.5-5.0'],
+                'Globulin' => ['units' => 'g/dL', 'normal_range' => '2.3-3.5'],
+                'A/G Ratio' => ['units' => '', 'normal_range' => '1.2-2.2'],
+                'Total Bilirubin' => ['units' => 'mg/dL', 'normal_range' => '0.3-1.2'],
+                'Direct Bilirubin' => ['units' => 'mg/dL', 'normal_range' => '0.0-0.3'],
+                'ALT (SGPT)' => ['units' => 'U/L', 'normal_range' => '7-56'],
+                'AST (SGOT)' => ['units' => 'U/L', 'normal_range' => '10-40'],
+                'ALP (Alkaline Phosphatase)' => ['units' => 'U/L', 'normal_range' => '44-147'],
+                
+                // Kidney Function Test parameters
+                'Urea (BUN)' => ['units' => 'mg/dL', 'normal_range' => '7-20'],
+                'Creatinine' => ['units' => 'mg/dL', 'normal_range' => '0.7-1.3'],
+                'Uric Acid' => ['units' => 'mg/dL', 'normal_range' => '3.5-7.2'],
+                'Sodium' => ['units' => 'mEq/L', 'normal_range' => '135-145'],
+                'Potassium' => ['units' => 'mEq/L', 'normal_range' => '3.5-5.0'],
+                'Chloride' => ['units' => 'mEq/L', 'normal_range' => '98-106'],
+                'eGFR (Calculated)' => ['units' => 'mL/min/1.73m²', 'normal_range' => '>60'],
+
+                // Blood Sugar parameters
+                'Glucose' => ['units' => 'mg/dL', 'normal_range' => '70-100 (Fasting)'],
+                'HbA1c %' => ['units' => '%', 'normal_range' => '<5.7'],
+
+                // Thyroid Function parameters
+                'TSH Level' => ['units' => 'µIU/mL', 'normal_range' => '0.4-4.0'],
+                'Free T4 Level' => ['units' => 'ng/dL', 'normal_range' => '0.7-1.9'],
+                'Free T3 Level' => ['units' => 'pg/mL', 'normal_range' => '2.3-4.2'],
+
+                // Default for any parameter not specifically mapped
+                'default' => ['units' => '', 'normal_range' => 'Refer to lab standards']
+            ];
+
+            // Create test parameters with units and normal ranges
+            foreach ($parameters as $index => $paramName) {
+                $details = $parameterDetails[$paramName] ?? $parameterDetails['default'];
+                $test->parameters()->create([
+                    'name' => $paramName,
+                    'order' => $index + 1,
+                    'units' => $details['units'],
+                    'normal_range' => $details['normal_range']
+                ]);
             }
-            Test::create($testData);
         }
     }
 }

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Test extends Model
 {
+    protected $with = ['parameters'];
+
     protected $fillable = [
         'code',
         'name',
@@ -15,13 +17,11 @@ class Test extends Model
         'department',
         'price',
         'duration',
-        'status',
-        'parameters'
+        'status'
     ];
 
     protected $casts = [
         'sample_types' => 'array',
-        'parameters' => 'array',
         'price' => 'decimal:2'
     ];
 
@@ -34,5 +34,13 @@ class Test extends Model
             ->using(\App\Models\SampleTest::class)
             ->withPivot(['status', 'results', 'notes'])
             ->withTimestamps();
+    }
+
+    /**
+     * Get the parameters associated with the test
+     */
+    public function parameters()
+    {
+        return $this->hasMany(TestParameter::class);
     }
 }

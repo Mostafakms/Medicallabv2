@@ -26,6 +26,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'; // Import useQ
 import { searchPatients, getSamples, createSample, updateSample, deleteSample, getTests } from '@/lib/api'; // Import the new API call
 import axios from 'axios'; // Add this import if not present
 import { toast } from 'sonner'; // Add this import for toast error
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 // Define the structure for a sample
 interface Sample {
@@ -81,6 +82,7 @@ const Samples = () => {
   const [editFormData, setEditFormData] = useState<any>(null); // Use 'any' for form state
 
   const queryClient = useQueryClient();
+  const navigate = useNavigate(); // Initialize useNavigate
 
   // Fetch samples from backend
   const { data: samplesResponse, isLoading: isSamplesLoading, refetch: refetchSamples } = useQuery({
@@ -277,6 +279,11 @@ const Samples = () => {
     } catch (err) {
       // Error handled by API interceptor
     }
+  };
+
+  // Navigate to test results page
+  const handleTestResultsClick = (sample: Sample) => {
+    navigate(`/samples/${sample.accessionNumber}/results`, { state: { sample } });
   };
 
   // --- SampleForm component for both Receive and Edit dialogs ---
@@ -647,13 +654,10 @@ const Samples = () => {
         </CardContent>
       </Card>
 
-      {/* Samples Table */}
+      {/* Wrap the samples table in a Card component for consistent styling */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TestTube className="h-5 w-5" />
-            Sample Tracking ({filteredSamples.length})
-          </CardTitle>
+          <CardTitle>Samples List</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -742,36 +746,40 @@ const Samples = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getPriorityColor(sample.priority)}>
-                      {sample.priority}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(sample.status)}>
-                      {sample.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">{sample.location}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleEditClick(sample)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <TestTube className="h-4 w-4" /> {/* Kept Test Tube button */}
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteSample(sample.accessionNumber)}>
-                        <span className="sr-only">Delete</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  <Badge className={getPriorityColor(sample.priority)}>
+                    {sample.priority}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge className={getStatusColor(sample.status)}>
+                    {sample.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-sm">{sample.location}</TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleEditClick(sample)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+  variant="ghost"
+  size="sm"
+  onClick={() => handleTestResultsClick(sample)}
+>
+  <TestTube className="h-4 w-4" />
+</Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteSample(sample.accessionNumber)}>
+                      <span className="sr-only">Delete</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
     </div>
   );
 };

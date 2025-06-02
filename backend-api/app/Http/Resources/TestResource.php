@@ -14,6 +14,11 @@ class TestResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Ensure parameters is always a collection (relationship), not an attribute/array/string
+        $parameters = $this->parameters;
+        if (!($parameters instanceof \Illuminate\Support\Collection)) {
+            $parameters = collect([]);
+        }
         return [
             'id' => $this->id,
             'code' => $this->code,
@@ -24,7 +29,16 @@ class TestResource extends JsonResource
             'price' => $this->price,
             'duration' => $this->duration,
             'status' => $this->status,
-            'parameters' => $this->parameters,
+            // Return parameters as array of objects from test_parameters table
+            'parameters' => $parameters->map(function ($param) {
+                return [
+                    'id' => $param->id ?? null,
+                    'name' => $param->name ?? null,
+                    'units' => $param->units ?? null,
+                    'normal_range' => $param->normal_range ?? null,
+                    'order' => $param->order ?? null,
+                ];
+            })->sortBy('order')->values(),
             'samples_count' => $this->whenCounted('samples'),
             // Include pivot data when available
             'pivot' => $this->whenPivotLoaded('sample_tests', function () {
