@@ -143,6 +143,21 @@ const Tests = () => {
     });
   }, [testsData, searchTerm]);
 
+  // Define resetForm before useEffect to avoid ReferenceError
+  const resetForm = useCallback(() => {
+    setFormData({
+      name: '',
+      code: '',
+      category: '',
+      department: '',
+      price: '',
+      duration: '',
+      parameters: '',
+      sample_types: [],
+      status: 'active'
+    });
+  }, []);
+
   // Handle dialog state changes safely
   useEffect(() => {
     if (!isAddDialogOpen) {
@@ -168,20 +183,6 @@ const Tests = () => {
       </div>
     );
   }
-
-  const resetForm = useCallback(() => {
-    setFormData({
-      name: '',
-      code: '',
-      category: '',
-      department: '',
-      price: '',
-      duration: '',
-      parameters: '',
-      sample_types: [],
-      status: 'active'
-    });
-  }, []);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();

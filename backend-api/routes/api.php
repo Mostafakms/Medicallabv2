@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\SampleController;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\SampleResultController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,3 +31,9 @@ Route::get('samples/accession/{accession_number}', [SampleController::class, 'sh
 
 // Test routes
 Route::apiResource('tests', TestController::class);
+
+// SampleResult routes
+Route::apiResource('sample-results', SampleResultController::class)->only(['store']);
+Route::get('sample-results/{sample_id}', [App\Http\Controllers\SampleResultController::class, 'show']);
+Route::put('sample-results/{sample_id}', [App\Http\Controllers\SampleResultController::class, 'update']);
+Route::patch('sample-results/{sample_id}', [App\Http\Controllers\SampleResultController::class, 'update']);

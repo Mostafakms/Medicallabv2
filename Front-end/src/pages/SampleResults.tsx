@@ -22,12 +22,21 @@ const SampleResults = () => {
       fetch(`http://127.0.0.1:8000/api/samples/accession/${accessionNumber}`)
         .then(res => res.json())
         .then(data => {
-          // If API returns a list, find the correct sample
           const found = Array.isArray(data.data)
             ? data.data.find(s => s.accession_number === accessionNumber)
             : data.data;
           setSample(found);
           setLoading(false);
+          // Fetch existing results for this sample
+          if (found && found.id) {
+            fetch(`http://127.0.0.1:8000/api/sample-results/${found.id}`)
+              .then(res => res.ok ? res.json() : Promise.resolve(null))
+              .then(resultData => {
+                if (resultData && resultData.data && resultData.data.results) {
+                  setResults(resultData.data.results);
+                }
+              });
+          }
         })
         .catch(() => {
           setError('Failed to fetch sample data.');
@@ -45,6 +54,31 @@ const SampleResults = () => {
         [paramName]: value
       }
     }));
+  };
+
+  // Save handler: POST if no results exist, PUT if results already exist
+  const handleSaveResults = async () => {
+    if (!sample || !sample.id) return;
+    // Check if results already exist
+    const res = await fetch(`http://127.0.0.1:8000/api/sample-results/${sample.id}`);
+    const exists = res.ok;
+    const method = exists ? 'PUT' : 'POST';
+    const url = exists
+      ? `http://127.0.0.1:8000/api/sample-results/${sample.id}`
+      : 'http://127.0.0.1:8000/api/sample-results';
+    const body = exists
+      ? JSON.stringify({ results })
+      : JSON.stringify({ sample_id: sample.id, results });
+    try {
+      await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      });
+      alert('Results saved to database.');
+    } catch (err) {
+      alert('Failed to save results.');
+    }
   };
 
   if (loading) return <div>Loading...</div>;
@@ -81,39 +115,46 @@ const SampleResults = () => {
               tests.map((test, index) => (
                 <div key={index} className="border p-4 rounded-md">
                   <p><strong>Test Name:</strong> {test.name || test.code || test.id || "N/A"}</p>
-                  <p><strong>Parameters:</strong></p>
-                  {Array.isArray(test.parameters) && test.parameters.length > 0 ? (
-                    test.parameters.map((param, paramIndex) => {
-                      return (
-                        <div key={paramIndex} className="ml-4 border p-4 rounded-md my-2 bg-gray-50">
-                          <p className="text-lg font-medium mb-2">{param.name}</p>
-                          <label className="block">
-                            <span className="text-gray-700">Result:</span>
-                            <input
-                              type="text"
-                              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400
-                                focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                              placeholder="Enter result"
-                              value={results[test.id]?.[param.name] || ''}
-                              onChange={e => handleResultChange(test.id, param.name, e.target.value)}
-                            />
-                          </label>
-                          <div className="grid grid-cols-2 gap-4 mt-3">
-                            <div>
-                              <span className="text-gray-700 text-sm">Units:</span>
-                              <div className="mt-1 font-medium">{param.units || "Not applicable"}</div>
-                            </div>
-                            <div>
-                              <span className="text-gray-700 text-sm">Normal Range:</span>
-                              <div className="mt-1 font-medium">{param.normal_range || "Not established"}</div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="text-gray-500">No parameters available for this test.</p>
-                  )}
+                  <div className="overflow-x-auto mt-2">
+                    <table className="min-w-full border text-sm">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="border px-2 py-1 text-left w-1/4 min-w-[120px]">Parameter</th>
+                          <th className="border px-2 py-1 text-left w-1/4 min-w-[120px]">Value</th>
+                          <th className="border px-2 py-1 text-left w-1/4 min-w-[100px]">Unit</th>
+                          <th className="border px-2 py-1 text-left w-1/4 min-w-[120px]">Normal Range</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.isArray(test.parameters) && test.parameters.length > 0 ? (
+                          test.parameters.map((param, paramIndex) => {
+                            // param can be string or object with name/units/normal_range
+                            const paramName = typeof param === 'object' && param.name ? param.name : param;
+                            const paramUnits = typeof param === 'object' && param.units ? param.units : (param.units || '');
+                            const paramRange = typeof param === 'object' && param.normal_range ? param.normal_range : (param.normal_range || '');
+                            return (
+                              <tr key={paramIndex}>
+                                <td className="border px-2 py-1 font-medium">{paramName}</td>
+                                <td className="border px-2 py-1">
+                                  <input
+                                    type="text"
+                                    className="w-full px-2 py-1 border rounded"
+                                    value={results[test.id]?.[paramName] || ''}
+                                    onChange={e => handleResultChange(test.id, paramName, e.target.value)}
+                                    placeholder="Enter value"
+                                  />
+                                </td>
+                                <td className="border px-2 py-1">{paramUnits || '—'}</td>
+                                <td className="border px-2 py-1">{paramRange || '—'}</td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr><td colSpan={4} className="text-gray-500 text-center">No parameters available for this test.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               ))
             ) : (
@@ -124,11 +165,7 @@ const SampleResults = () => {
       </Card>
       <button
         className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-        onClick={() => {
-          // For now, just log the results. Replace with API call as needed.
-          console.log('Results to save:', results);
-          alert('Results saved (see console for data).');
-        }}
+        onClick={handleSaveResults}
       >
         Save Results
       </button>
