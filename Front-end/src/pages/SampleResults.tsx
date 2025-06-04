@@ -56,11 +56,17 @@ const SampleResults = () => {
           setLoading(false);
           // Fetch existing results for this sample
           if (found && found.id) {
-            fetch(`http://127.0.0.1:8000/api/sample-results/${found.id}`)
+            // Fetch all results for this sample (multiple tests)
+            fetch(`http://127.0.0.1:8000/api/sample-results-by-sample?sample_id=${found.id}`)
               .then(res => res.ok ? res.json() : Promise.resolve(null))
               .then(resultData => {
-                if (resultData && resultData.data && resultData.data.results) {
-                  setResults(resultData.data.results);
+                if (resultData && resultData.data && Array.isArray(resultData.data)) {
+                  // Map results: { [testId]: { ...parameters } }
+                  const resultsMap = {};
+                  resultData.data.forEach(r => {
+                    resultsMap[r.test_id] = r.results;
+                  });
+                  setResults(resultsMap);
                 }
               });
           }
@@ -83,25 +89,30 @@ const SampleResults = () => {
     }));
   };
 
-  // Save handler: POST if no results exist, PUT if results already exist
+  // Save handler: POST or PUT for each test result
   const handleSaveResults = async () => {
     if (!sample || !sample.id) return;
-    // Check if results already exist
-    const res = await fetch(`http://127.0.0.1:8000/api/sample-results/${sample.id}`);
-    const exists = res.ok;
-    const method = exists ? 'PUT' : 'POST';
-    const url = exists
-      ? `http://127.0.0.1:8000/api/sample-results/${sample.id}`
-      : 'http://127.0.0.1:8000/api/sample-results';
-    const body = exists
-      ? JSON.stringify({ results })
-      : JSON.stringify({ sample_id: sample.id, results });
+    const tests = Array.isArray(sample.tests) ? sample.tests : [];
     try {
-      await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body,
-      });
+      for (const test of tests) {
+        const testId = test.id;
+        const testResults = results[testId] || {};
+        // Check if results already exist for this sample and test
+        const res = await fetch(`http://127.0.0.1:8000/api/sample-results/${sample.id}?test_id=${testId}`);
+        const exists = res.ok;
+        const method = exists ? 'PUT' : 'POST';
+        const url = exists
+          ? `http://127.0.0.1:8000/api/sample-results/${sample.id}`
+          : 'http://127.0.0.1:8000/api/sample-results';
+        const body = exists
+          ? JSON.stringify({ results: testResults, test_id: testId })
+          : JSON.stringify({ sample_id: sample.id, test_id: testId, results: testResults });
+        await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        });
+      }
       alert('Results saved to database.');
     } catch (err) {
       alert('Failed to save results.');

@@ -28,7 +28,7 @@ class Sample extends Model
     /**
      * Get the patient that owns the sample
      */
-    public function patient(): BelongsTo
+    public function patient()
     {
         return $this->belongsTo(Patient::class);
     }
@@ -42,5 +42,13 @@ class Sample extends Model
             ->using(\App\Models\SampleTest::class)
             ->withPivot(['status', 'results', 'notes'])
             ->withTimestamps();
+    }
+
+    /**
+     * Get the user that owns the sample
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

@@ -37,3 +37,8 @@ Route::apiResource('sample-results', SampleResultController::class)->only(['stor
 Route::get('sample-results/{sample_id}', [App\Http\Controllers\SampleResultController::class, 'show']);
 Route::put('sample-results/{sample_id}', [App\Http\Controllers\SampleResultController::class, 'update']);
 Route::patch('sample-results/{sample_id}', [App\Http\Controllers\SampleResultController::class, 'update']);
+
+// Add a route to fetch all sample results
+Route::get('sample-results', [App\Http\Controllers\SampleResultController::class, 'index']);
+// Add a route to fetch all results for a given sample_id
+Route::get('sample-results-by-sample', [App\Http\Controllers\SampleResultController::class, 'resultsBySample']);

@@ -52,42 +52,18 @@ const Results = () => {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const queryClient = useQueryClient();
 
-  // Fetch samples with safer error handling
-  const { data: samplesResponse, isLoading, error, isError } = useQuery({
-    queryKey: ["samples", "tests"],
+  // Fetch sample results with safer error handling
+  const { data: resultsResponse, isLoading, error, isError } = useQuery({
+    queryKey: ["sample-results"],
     queryFn: async () => {
       try {
-        const response = await api.getSamples();
+        const response = await api.getSampleResults();
         if (!response?.data?.data) {
           throw new Error("Invalid response format from server");
         }
-        
-        // Fetch all sample tests in parallel with error handling
-        const samples = response.data.data;
-        const sampleTestDetails = await Promise.all(
-          samples.map(async (sample: any) => {
-            try {
-              const testsResponse = await api.getSampleTests(sample.id);
-              if (!testsResponse?.data?.data) {
-                throw new Error(`Failed to fetch tests for sample ${sample.id}`);
-              }
-              return {
-                ...sample,
-                tests: testsResponse.data.data
-              };
-            } catch (err: any) {
-              console.error(`Error fetching tests for sample ${sample.id}:`, err);
-              // Return sample with empty tests array instead of failing completely
-              return {
-                ...sample,
-                tests: []
-              };
-            }
-          })
-        );
-        return sampleTestDetails;
+        return response.data.data;
       } catch (err: any) {
-        const message = err.response?.data?.message || err.message || "Failed to fetch test results";
+        const message = err.response?.data?.message || err.message || "Failed to fetch results";
         toast.error(message);
         throw new Error(message);
       }
@@ -96,59 +72,71 @@ const Results = () => {
     refetchOnWindowFocus: false
   });
 
-  // Transform samples data safely
+  // Log the API response to inspect its structure
+  console.log('API Response:', resultsResponse);
+
+  // Debug: log each result and its sample/patient
+  if (Array.isArray(resultsResponse)) {
+    resultsResponse.forEach((result: any, idx: number) => {
+      console.log(`Result[${idx}] sample:`, result.sample);
+      console.log(`Result[${idx}] sample.patient:`, result.sample?.patient);
+    });
+  }
+
+  // Transform results data safely
   const testResults = useMemo(() => {
-    if (!Array.isArray(samplesResponse)) return [];
-    
-    return samplesResponse.flatMap((sample: any) => {
-      try {
-        // Ensure sample and its tests array exist
-        if (!sample || !Array.isArray(sample.tests)) return [];
-        
-        return sample.tests.map((test: any) => ({
-          sample_id: sample.id || '',
-          test_id: test?.id || '',
-          sample: {
-            id: sample.id || '',
-            patient: {
-              id: sample.patient?.id || '',
-              name: sample.patient?.name || 'Unknown Patient'
-            },
-            collection_date: sample.collection_date || '',
-            collection_time: sample.collection_time || '',
-            priority: sample.priority || 'normal',
-            status: sample.status || 'pending'
-          },
-          test: {
-            id: test?.id || '',
-            name: test?.name || 'Unknown Test',
-            category: test?.category || ''
-          },
-          status: test?.pivot?.status || 'pending',
-          results: test?.pivot?.results || {},
-          notes: test?.pivot?.notes || '',
-          technician: test?.pivot?.technician || '',
-          created_at: test?.pivot?.created_at || '',
-          updated_at: test?.pivot?.updated_at || ''
-        }));
-      } catch (err) {
-        console.error('Error transforming sample data:', err);
-        return [];
+    if (!Array.isArray(resultsResponse)) return [];
+
+    return resultsResponse.map((result: any) => ({
+      sample_id: result.sample_id || '',
+      test_id: result.test_id || '',
+      user_id: result.sample?.patient?.id || '',
+      // Try alternative paths for patient name
+      patient_name: result.sample?.patient?.name 
+        || result.sample?.patient_name 
+        || result.patient_name 
+        || 'Unknown Patient',
+      collection_date: result.sample?.collection_date || '',
+      test_name: result.test?.name || 'Unknown Test',
+      status: result.status || 'pending',
+      results: result.results || {},
+      created_at: result.created_at || '',
+      phone: result.sample?.patient?.phone || '',
+      priority: result.priority || 'normal',
+    }));
+  }, [resultsResponse]);
+
+  // Combine results by sample_id
+  const combinedResults = useMemo(() => {
+    if (!Array.isArray(testResults)) return [];
+    const map = new Map();
+    testResults.forEach((result) => {
+      if (!map.has(result.sample_id)) {
+        map.set(result.sample_id, {
+          ...result,
+          test_names: [result.test_name],
+          test_ids: [result.test_id],
+        });
+      } else {
+        const entry = map.get(result.sample_id);
+        entry.test_names.push(result.test_name);
+        entry.test_ids.push(result.test_id);
       }
     });
-  }, [samplesResponse]);
+    return Array.from(map.values());
+  }, [testResults]);
 
   // Apply filters safely
   const filteredResults = useMemo(() => {
     try {
-      return testResults.filter((result: TestResult) => {
-        const matchesSearch = 
-          (result.sample_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (result.sample.patient.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (result.test.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+      return combinedResults.filter((result) => {
+        const matchesSearch =
+          String(result.sample_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          String(result.patient_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          String(result.test_names.join(', ') || '').toLowerCase().includes(searchTerm.toLowerCase());
 
         const matchesStatus = statusFilter === 'all' || result.status === statusFilter;
-        const matchesPriority = priorityFilter === 'all' || result.sample.priority === priorityFilter;
+        const matchesPriority = priorityFilter === 'all';
 
         return matchesSearch && matchesStatus && matchesPriority;
       });
@@ -156,18 +144,7 @@ const Results = () => {
       console.error('Error filtering results:', err);
       return [];
     }
-  }, [testResults, searchTerm, statusFilter, priorityFilter]);
-
-  // Handle error states
-  if (isError) {
-    return (
-      <ErrorState 
-        error={error instanceof Error ? error : new Error("An error occurred while fetching results")}
-        queryKey={["samples", "tests"]}
-        queryClient={queryClient}
-      />
-    );
-  }
+  }, [combinedResults, searchTerm, statusFilter, priorityFilter]);
 
   // Helper functions for UI
   const getStatusColor = (status: string) => {
@@ -211,7 +188,7 @@ const Results = () => {
     mutationFn: ({ sampleId, testId, data }: { sampleId: string, testId: string, data: any }) =>
       api.updateSampleTest(sampleId, testId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["samples", "tests"] });
+      queryClient.invalidateQueries({ queryKey: ["sample-results"] });
       toast.success("Test result updated successfully");
     },
     onError: (error: any) => {
@@ -220,35 +197,23 @@ const Results = () => {
   });
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Results & Reports</h1>
-          <p className="text-gray-600">View and manage test results and reports</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export Results
-          </Button>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
+    <div className="p-6 space-y-4">
       <Card>
-        <CardContent className="p-6">
+        <CardHeader>
+          <CardTitle>Test Results</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search by accession number, patient, or test..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Input
+              placeholder="Search by patient, test, or sample ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1"
+            />
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => setStatusFilter(value)}
+            >
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -259,13 +224,16 @@ const Results = () => {
                 <SelectItem value="in_progress">In Progress</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <Select
+              value={priorityFilter}
+              onValueChange={(value) => setPriorityFilter(value)}
+            >
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Priority</SelectItem>
-                <SelectItem value="stat">Stat</SelectItem>
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="stat">STAT</SelectItem>
                 <SelectItem value="urgent">Urgent</SelectItem>
                 <SelectItem value="normal">Normal</SelectItem>
               </SelectContent>
@@ -274,94 +242,59 @@ const Results = () => {
         </CardContent>
       </Card>
 
-      {/* Results Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Test Results ({filteredResults.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filteredResults.length === 0 && !isLoading ? (
-            <div className="text-center text-gray-500 py-8">No results found.</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Sample ID</TableHead>
-                  <TableHead>Patient</TableHead>
-                  <TableHead>Test</TableHead>
-                  <TableHead>Collection Date</TableHead>
-                  <TableHead>Updated Date</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Technician</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
+      {isError ? (
+        <ErrorState 
+          error={error instanceof Error ? error : new Error("An error occurred while fetching results")}
+          queryKey={["sample-results"]}
+          queryClient={queryClient}
+        />
+      ) : (
+        <Card>
+          <CardContent>
+            {filteredResults.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">No results found.</div>
+            ) : (
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center">Loading...</TableCell>
+                    <TableHead>Sample ID</TableHead>
+                    <TableHead>Patient Name</TableHead>
+                    <TableHead>Tests</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Phone Number</TableHead>
+                    <TableHead>Total Price</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ) : filteredResults.map((sample: any) => (
-                  <TableRow key={sample.id}>
-                    <TableCell className="font-medium">{sample.sample_id}</TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{sample.sample.patient.name}</div>
-                        <div className="text-sm text-gray-500">{sample.sample.patient.id}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{sample.test.name}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{sample.sample.collection_date}</div>
-                        <div className="text-gray-500">{sample.sample.collection_time}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{new Date(sample.updated_at).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Badge className={getPriorityColor(sample.sample.priority)}>
-                        {sample.sample.priority.charAt(0).toUpperCase() + sample.sample.priority.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge className={getStatusColor(sample.status)}>
-                          {formatStatus(sample.status)}
-                        </Badge>
-                        {sample.status === 'completed' && (
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{sample.technician || '-'}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {sample.status === "completed" && (
-                          <>
-                            <Button variant="ghost" size="sm">
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Send className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {combinedResults.map((result) => (
+                    <TableRow key={result.sample_id}>
+                      <TableCell>{result.sample_id}</TableCell>
+                      <TableCell>{result.patient_name}</TableCell>
+                      <TableCell>{result.test_names.join(', ')}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(result.status)}>{formatStatus(result.status)}</Badge>
+                      </TableCell>
+                      <TableCell>{result.phone || result.sample?.patient?.phone || result.sample?.phone || 'N/A'}</TableCell>
+                      <TableCell>{/* Total Price column, empty for now */}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

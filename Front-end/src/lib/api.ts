@@ -37,6 +37,7 @@ export const getSampleTests = (id: string) => api.get(`/samples/${id}/tests`);
 export const addTestsToSample = (id: string, data: any) => api.post(`/samples/${id}/tests`, data);
 export const updateSampleTest = (sampleId: string, testId: string, data: any) => 
   api.put(`/samples/${sampleId}/tests/${testId}`, data);
+export const getSampleResults = () => api.get('/sample-results'); // New API function to fetch sample results
 
 // Tests API
 export const getTests = (params?: URLSearchParams) => api.get('/tests', { params });
