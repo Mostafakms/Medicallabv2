@@ -511,9 +511,7 @@ const Samples = () => {
 
   // Get tests available for the selected sample type
   const testsForSelectedType = React.useMemo(() => {
-    console.log('DEBUG: testsResponse', testsResponse);
-    console.log('DEBUG: formData.sampleType', formData.sampleType);
-    if (!testsResponse || !formData.sampleType) return [];
+    if (!Array.isArray(testsResponse) || !formData.sampleType) return [];
     const selectedType = formData.sampleType.toLowerCase();
     return testsResponse.filter((test: any) =>
       Array.isArray(test.sample_types) &&
