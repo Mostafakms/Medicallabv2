@@ -115,20 +115,9 @@ const Samples = () => {
 
   // Fetch all tests for mapping names to IDs (fetch all pages)
   const fetchAllTests = async () => {
-    let page = 1;
-    let allTests: any[] = [];
-    let totalPages = 1;
-
-    do {
-      const params = new URLSearchParams({ page: String(page) });
-      const response = await getTests(params);
-      const { data, meta } = response.data;
-      allTests = allTests.concat(data);
-      totalPages = meta.last_page;
-      page++;
-    } while (page <= totalPages);
-
-    return allTests;
+    // Directly fetch and return all tests (no pagination)
+    const response = await getTests();
+    return response.data.data;
   };
 
   const { data: testsResponse, isLoading: isTestsLoading } = useQuery({
@@ -312,20 +301,20 @@ const Samples = () => {
     isEdit = false,
   }) => (
     <div className="grid grid-cols-2 gap-4 py-4">
-      <div className="space-y-2"> {/* Patient ID Input */}
-        <Label htmlFor={isEdit ? 'editPatientId' : 'patientId'}>Patient ID</Label>
+      <div className="space-y-2">
+        <Label htmlFor={`${isEdit ? 'edit-' : ''}patient-id`}>Patient ID</Label>
         <Input
-          id={isEdit ? 'editPatientId' : 'patientId'}
+          id={`${isEdit ? 'edit-' : ''}patient-id`}
           value={formData.patientId}
           onChange={(e) => onInputChange('patientId', e.target.value)}
           placeholder="Enter or scan patient ID"
           disabled
         />
       </div>
-      <div className="space-y-2"> {/* Patient Name Input */}
-        <Label htmlFor={isEdit ? 'editPatientName' : 'patientName'}>Patient Name</Label>
+      <div className="space-y-2">
+        <Label htmlFor={`${isEdit ? 'edit-' : ''}patient-name`}>Patient Name</Label>
         <Input
-          id={isEdit ? 'editPatientName' : 'patientName'}
+          id={`${isEdit ? 'edit-' : ''}patient-name`}
           value={isEdit ? formData.patientName : (patientSearchTerm || formData.patientName)}
           onChange={(e) => isEdit
             ? onInputChange('patientName', e.target.value)
@@ -337,12 +326,14 @@ const Samples = () => {
         {!isEdit && setPatientSearchTerm && patientSearchTerm.length > 1 && (
           <>
             {patientSearchResults && patientSearchResults.length > 0 && (
-              <div className="border rounded-md max-h-40 overflow-y-auto">
+              <div className="border rounded-md max-h-40 overflow-y-auto" role="listbox">
                 {patientSearchResults.map(patient => (
                   <div
                     key={patient.id}
                     className="p-2 cursor-pointer hover:bg-gray-100"
                     onClick={() => onPatientSelect && onPatientSelect(patient)}
+                    role="option"
+                    aria-selected="false"
                   >
                     {patient.name} ({patient.id})
                   </div>
@@ -358,40 +349,44 @@ const Samples = () => {
           </>
         )}
       </div>
-      <div className="space-y-2 col-span-2"> {/* Collection Date and Time */}
-        <Label>Collection Date & Time</Label>
+      <div className="space-y-2 col-span-2">
+        <Label htmlFor={`${isEdit ? 'edit-' : ''}collection-date`}>Collection Date & Time</Label>
         <div className="grid grid-cols-2 gap-4">
           <Input
-            id={isEdit ? 'editCollectionDate' : 'collectionDate'}
+            id={`${isEdit ? 'edit-' : ''}collection-date`}
             type="date"
             value={formData.collectionDate}
             onChange={(e) => onInputChange('collectionDate', e.target.value)}
+            aria-label="Collection Date"
           />
           <Input
-            id={isEdit ? 'editCollectionTime' : 'collectionTime'}
+            id={`${isEdit ? 'edit-' : ''}collection-time`}
             type="time"
             value={formData.collectionTime}
             onChange={(e) => onInputChange('collectionTime', e.target.value)}
+            aria-label="Collection Time"
           />
         </div>
       </div>
-      <div className="space-y-2"> {/* Sample Type Input */}
-        <Label htmlFor={isEdit ? 'editSampleType' : 'sampleType'}>Sample Type</Label>
+      <div className="space-y-2">
+        <Label htmlFor={`${isEdit ? 'edit-' : ''}sample-type`}>Sample Type</Label>
         <Select value={formData.sampleType} onValueChange={(value) => onInputChange('sampleType', value)}>
-          <SelectTrigger>
+          <SelectTrigger id={`${isEdit ? 'edit-' : ''}sample-type`}>
             <SelectValue placeholder="Select sample type" />
           </SelectTrigger>
           <SelectContent>
-            {Object.keys(sampleTypeMapping).map(type => (
-              <SelectItem key={type} value={type}>{type}</SelectItem>
-            ))}
+            <SelectItem value="Blood">Blood</SelectItem>
+            <SelectItem value="Urine">Urine</SelectItem>
+            <SelectItem value="Stool">Stool</SelectItem>
+            <SelectItem value="Sputum">Sputum</SelectItem>
+            <SelectItem value="Tissue">Tissue</SelectItem>
           </SelectContent>
         </Select>
       </div>
-      <div className="space-y-2"> {/* Priority Input */}
-        <Label htmlFor={isEdit ? 'editPriority' : 'priority'}>Priority</Label>
+      <div className="space-y-2">
+        <Label htmlFor={`${isEdit ? 'edit-' : ''}priority`}>Priority</Label>
         <Select value={formData.priority} onValueChange={(value) => onInputChange('priority', value)}>
-          <SelectTrigger>
+          <SelectTrigger id={`${isEdit ? 'edit-' : ''}priority`}>
             <SelectValue placeholder="Select priority" />
           </SelectTrigger>
           <SelectContent>
@@ -401,38 +396,45 @@ const Samples = () => {
           </SelectContent>
         </Select>
       </div>
-      <div className="space-y-2"> {/* Location Input */}
-        <Label htmlFor={isEdit ? 'editLocation' : 'location'}>Location</Label>
+      <div className="space-y-2">
+        <Label htmlFor={`${isEdit ? 'edit-' : ''}location`}>Location</Label>
         <Input
-          id={isEdit ? 'editLocation' : 'location'}
+          id={`${isEdit ? 'edit-' : ''}location`}
           value={formData.location}
           onChange={(e) => onInputChange('location', e.target.value)}
           placeholder="Enter sample location"
         />
       </div>
-      <div className="space-y-2 col-span-2"> {/* Tests Selection */}
-        <Label htmlFor={isEdit ? 'editTests' : 'tests'}>Requested Tests</Label>
-        <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2">
-          {testsForSelectedType.length > 0 ? (
-            testsForSelectedType.map((test: any) => (
-              <div key={test.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`${isEdit ? 'edit-' : ''}test-${test.id}`}
-                  checked={formData.tests.includes(test.name)}
-                  onCheckedChange={(isChecked) => onTestChange(test.name, isChecked as boolean)}
-                />
-                <Label htmlFor={`${isEdit ? 'edit-' : ''}test-${test.id}`}>{test.name}</Label>
-              </div>
-            ))
+      <div className="space-y-2 col-span-2">
+        <span className="text-sm font-medium leading-none">Requested Tests</span>
+        <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2" role="group" aria-label="Available Tests">
+          {isTestsLoading ? (
+            <p className="text-gray-500 col-span-2">Loading tests...</p>
+          ) : !Array.isArray(testsResponse) ? (
+            <p className="text-red-500 col-span-2">Failed to load tests.</p>
+          ) : testsForSelectedType.length > 0 ? (
+            testsForSelectedType.map((test: any) => {
+              const checkboxId = `${isEdit ? 'edit-' : ''}test-${test.id}`;
+              return (
+                <div key={test.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={checkboxId}
+                    checked={formData.tests.includes(test.name)}
+                    onCheckedChange={(isChecked) => onTestChange(test.name, isChecked as boolean)}
+                  />
+                  <Label htmlFor={checkboxId}>{test.name}</Label>
+                </div>
+              );
+            })
           ) : (
             <p className="text-gray-500 col-span-2">Select a sample type to see available tests.</p>
           )}
         </div>
       </div>
-      <div className="space-y-2 col-span-2"> {/* Notes Input */}
-        <Label htmlFor={isEdit ? 'editNotes' : 'notes'}>Collection Notes</Label>
+      <div className="space-y-2 col-span-2">
+        <Label htmlFor={`${isEdit ? 'edit-' : ''}notes`}>Collection Notes</Label>
         <Input
-          id={isEdit ? 'editNotes' : 'notes'}
+          id={`${isEdit ? 'edit-' : ''}notes`}
           value={formData.notes}
           onChange={(e) => onInputChange('notes', e.target.value)}
           placeholder="Any special instructions or notes"
@@ -498,7 +500,7 @@ const Samples = () => {
     setEditFormData(null); // Clear edit form data
   };
 
-  // Add a mapping for sampleType values to match backend enum
+  // Add a mapping for sampleType values to match backend enum exactly
   const sampleTypeMapping: Record<string, string> = {
     'Blood': 'Blood',
     'Urine': 'Urine',
@@ -508,24 +510,32 @@ const Samples = () => {
   };
 
   // Get tests available for the selected sample type
-  const testsForSelectedType = testsResponse
-    ? testsResponse.filter((test: any) => 
-        Array.isArray(test.sample_types) && 
-        test.sample_types.some((type: string) => 
-          type.trim().toLowerCase().startsWith(formData.sampleType.trim().toLowerCase())
-        )
+  const testsForSelectedType = React.useMemo(() => {
+    console.log('DEBUG: testsResponse', testsResponse);
+    console.log('DEBUG: formData.sampleType', formData.sampleType);
+    if (!testsResponse || !formData.sampleType) return [];
+    const selectedType = formData.sampleType.toLowerCase();
+    return testsResponse.filter((test: any) =>
+      Array.isArray(test.sample_types) &&
+      test.sample_types.some((type: string) =>
+        type.toLowerCase().includes(selectedType)
       )
-    : [];
+    );
+  }, [testsResponse, formData.sampleType]);
 
-  // Get tests available for the edit form selected sample type
-  const testsForEditSelectedType = testsResponse && editFormData
-    ? testsResponse.filter((test: any) => 
-        Array.isArray(test.sample_types) && 
-        test.sample_types.some((type: string) => 
-          type.trim().toLowerCase().startsWith(editFormData.sampleType.trim().toLowerCase())
-        )
-      )
-    : [];
+  const testsForEditSelectedType = React.useMemo(() => {
+    if (!testsResponse || !editFormData?.sampleType) {
+      return [];
+    }
+    const selectedType = editFormData.sampleType.toLowerCase();
+    return testsResponse.filter((test: any) =>
+      Array.isArray(test.sample_types) &&
+      test.sample_types.some((type: string) => {
+        const typeLower = type.toLowerCase();
+        return typeLower.includes(selectedType) || selectedType.includes(typeLower);
+      })
+    );
+  }, [testsResponse, editFormData?.sampleType]);
 
   // Group tests by sampleType
   const groupedTests = testsResponse

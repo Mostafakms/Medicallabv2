@@ -19,7 +19,10 @@ class TestController extends Controller
 
         // Filter by sample type if provided
         if ($request->has('sample_type')) {
-            $query->whereJsonContains('sample_types', $request->sample_type);
+            $sampleType = $request->sample_type;
+            $query->where(function($q) use ($sampleType) {
+                $q->whereRaw("JSON_SEARCH(LOWER(sample_types), 'one', LOWER(?)) IS NOT NULL", ["{$sampleType}%"]);
+            });
         }
 
         // Filter by usage if provided
