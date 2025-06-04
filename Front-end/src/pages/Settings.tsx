@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,72 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings as SettingsIcon, User, Bell, Shield, Database, Printer } from 'lucide-react';
 
+const BASE_API_URL = 'http://127.0.0.1:8000'; // Always use full backend URL for local dev
+
 const Settings = () => {
+  const [labInfo, setLabInfo] = useState({ name: '', address: '', phone: '', email: '', logo: '' });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    fetch(`${BASE_API_URL}/api/lab-settings`)
+      .then(res => res.json())
+      .then(data => {
+        if (data) setLabInfo(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError('Failed to load lab info: ' + err.message);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value, files } = e.target;
+    if (id === 'logo' && files && files[0]) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setLabInfo(prev => ({ ...prev, logo: ev.target?.result as string }));
+      };
+      reader.readAsDataURL(files[0]);
+    } else {
+      setLabInfo(prev => ({ ...prev, [id]: value }));
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSuccess(false);
+    setError(null);
+    try {
+      const res = await fetch(`${BASE_API_URL}/api/lab-settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(labInfo),
+      });
+      if (!res.ok) {
+        let errMsg = 'Failed to save';
+        try {
+          const errData = await res.json();
+          errMsg = errData.message || JSON.stringify(errData) || errMsg;
+        } catch {}
+        throw new Error(errMsg);
+      }
+      // Re-fetch lab info to update UI (especially logo)
+      const updated = await fetch(`${BASE_API_URL}/api/lab-settings`).then(r => r.json());
+      setLabInfo(updated);
+      setSuccess(true);
+    } catch (e: any) {
+      setError(e.message || 'Failed to save lab info');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <div>Loading...</div>;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -15,7 +79,6 @@ const Settings = () => {
         <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
         <p className="text-gray-600">Configure system preferences and settings</p>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* General Settings */}
         <Card>
@@ -26,23 +89,30 @@ const Settings = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {error && <div className="text-red-500">{error}</div>}
+            {success && <div className="text-green-600">Saved!</div>}
             <div className="space-y-2">
               <Label htmlFor="labName">Laboratory Name</Label>
-              <Input id="labName" defaultValue="City Medical Laboratory" />
+              <Input id="name" value={labInfo.name} onChange={handleChange} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="address">Address</Label>
-              <Input id="address" defaultValue="123 Medical Center Dr, City, State 12345" />
+              <Input id="address" value={labInfo.address} onChange={handleChange} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input id="phone" defaultValue="+1 234-567-8900" />
+              <Input id="phone" value={labInfo.phone} onChange={handleChange} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" defaultValue="info@citymedlab.com" />
+              <Input id="email" type="email" value={labInfo.email} onChange={handleChange} />
             </div>
-            <Button>Save Changes</Button>
+            <div className="space-y-2">
+              <Label htmlFor="logo">Logo</Label>
+              <Input id="logo" type="file" accept="image/*" onChange={handleChange} />
+              {labInfo.logo && <img src={labInfo.logo} alt="Lab Logo" className="h-16 mt-2" />}
+            </div>
+            <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
           </CardContent>
         </Card>
 

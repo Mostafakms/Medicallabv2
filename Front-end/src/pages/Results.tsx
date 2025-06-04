@@ -18,6 +18,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/api";
 import { toast } from "sonner";
 import { ErrorState } from "@/components/error-state";
+import { useNavigate } from 'react-router-dom';
 
 interface TestResult {
   sample_id: string;
@@ -50,7 +51,10 @@ const Results = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  const [selectedSample, setSelectedSample] = useState(null);
+  const [showReport, setShowReport] = useState(false);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Fetch sample results with safer error handling
   const { data: resultsResponse, isLoading, error, isError } = useQuery({
@@ -89,9 +93,9 @@ const Results = () => {
 
     return resultsResponse.map((result: any) => ({
       sample_id: result.sample_id || '',
+      accession_number: result.sample?.accession_number || '',
       test_id: result.test_id || '',
       user_id: result.sample?.patient?.id || '',
-      // Try alternative paths for patient name
       patient_name: result.sample?.patient?.name 
         || result.sample?.patient_name 
         || result.patient_name 
@@ -279,7 +283,11 @@ const Results = () => {
                       <TableCell>{/* Total Price column, empty for now */}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button variant="ghost" size="sm">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/sample-report/${result.accession_number}`)}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="sm">
@@ -294,6 +302,23 @@ const Results = () => {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {showReport && selectedSample && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded shadow-lg w-full max-w-2xl print:w-full print:max-w-full">
+            <h2 className="text-xl font-bold mb-4">Sample Report</h2>
+            <p><strong>Sample ID:</strong> {selectedSample.sample_id}</p>
+            <p><strong>Patient Name:</strong> {selectedSample.patient_name}</p>
+            <p><strong>Phone:</strong> {selectedSample.phone || 'N/A'}</p>
+            <p><strong>Tests:</strong> {selectedSample.test_names.join(', ')}</p>
+            {/* Add more details as needed */}
+            <div className="mt-4 flex gap-2">
+              <Button onClick={() => window.print()}>Print</Button>
+              <Button onClick={() => setShowReport(false)}>Close</Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

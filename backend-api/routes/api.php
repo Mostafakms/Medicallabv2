@@ -7,6 +7,7 @@ use App\Http\Controllers\PatientController;
 use App\Http\Controllers\SampleController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\SampleResultController;
+use App\Http\Controllers\LabSettingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,3 +43,7 @@ Route::patch('sample-results/{sample_id}', [App\Http\Controllers\SampleResultCon
 Route::get('sample-results', [App\Http\Controllers\SampleResultController::class, 'index']);
 // Add a route to fetch all results for a given sample_id
 Route::get('sample-results-by-sample', [App\Http\Controllers\SampleResultController::class, 'resultsBySample']);
+
+// Lab Settings API
+Route::get('/lab-settings', [LabSettingController::class, 'show']);
+Route::post('/lab-settings', [LabSettingController::class, 'update']);

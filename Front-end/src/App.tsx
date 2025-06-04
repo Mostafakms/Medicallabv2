@@ -15,6 +15,7 @@ import Staff from "./pages/Staff";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import SampleResults from "./pages/SampleResults";
+import SampleReport from "./pages/SampleReport";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="staff" element={<Staff />} />
             <Route path="settings" element={<Settings />} />
             <Route path="samples/:accessionNumber/results" element={<SampleResults />} />
+            <Route path="/sample-report/:accessionNumber" element={<SampleReport />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
