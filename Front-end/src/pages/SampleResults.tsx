@@ -1,6 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+
+// ErrorBoundary to catch runtime errors
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('ErrorBoundary caught:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return <div className="text-red-600 p-4">An error occurred: {this.state.error?.toString()}</div>;
+    }
+    return this.props.children;
+  }
+}
 
 const formatDateTime = (dateTime) => {
   const date = new Date(dateTime);
@@ -90,86 +117,96 @@ const SampleResults = () => {
     : { date: "N/A", time: "N/A" };
   const tests = Array.isArray(sample.tests) ? sample.tests : [];
 
+  // Add logging to debug white page issue
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('Sample:', sample);
+    console.log('Tests:', tests);
+    console.log('Results:', results);
+  }
+
+  // Defensive checks for tests rendering
+  const safeTests = Array.isArray(tests) ? tests : [];
+
+  // Add logging to debug render cycles
+  console.log('Rendering SampleResults component');
+
   return (
-    <div className="p-6 space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Test Results for Sample #{sample.accession_number || "N/A"}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <p><strong>Patient Name:</strong> {sample.patient?.name || "N/A"}</p>
-            <p><strong>Sample Type:</strong> {sample.sample_type || "N/A"}</p>
-            <p><strong>Collection Date:</strong> {formattedCollection.date}</p>
-            <p><strong>Collection Time:</strong> {formattedCollection.time}</p>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Tests</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {tests.length > 0 ? (
-              tests.map((test, index) => (
-                <div key={index} className="border p-4 rounded-md">
-                  <p><strong>Test Name:</strong> {test.name || test.code || test.id || "N/A"}</p>
-                  <div className="overflow-x-auto mt-2">
-                    <table className="min-w-full border text-sm">
-                      <thead>
-                        <tr className="bg-gray-100">
-                          <th className="border px-2 py-1 text-left w-1/4 min-w-[120px]">Parameter</th>
-                          <th className="border px-2 py-1 text-left w-1/4 min-w-[120px]">Value</th>
-                          <th className="border px-2 py-1 text-left w-1/4 min-w-[100px]">Unit</th>
-                          <th className="border px-2 py-1 text-left w-1/4 min-w-[120px]">Normal Range</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Array.isArray(test.parameters) && test.parameters.length > 0 ? (
-                          test.parameters.map((param, paramIndex) => {
-                            // param can be string or object with name/units/normal_range
-                            const paramName = typeof param === 'object' && param.name ? param.name : param;
-                            const paramUnits = typeof param === 'object' && param.units ? param.units : (param.units || '');
-                            const paramRange = typeof param === 'object' && param.normal_range ? param.normal_range : (param.normal_range || '');
-                            return (
-                              <tr key={paramIndex}>
-                                <td className="border px-2 py-1 font-medium">{paramName}</td>
-                                <td className="border px-2 py-1">
-                                  <input
-                                    type="text"
-                                    className="w-full px-2 py-1 border rounded"
-                                    value={results[test.id]?.[paramName] || ''}
-                                    onChange={e => handleResultChange(test.id, paramName, e.target.value)}
-                                    placeholder="Enter value"
-                                  />
-                                </td>
-                                <td className="border px-2 py-1">{paramUnits || '—'}</td>
-                                <td className="border px-2 py-1">{paramRange || '—'}</td>
-                              </tr>
-                            );
-                          })
-                        ) : (
-                          <tr><td colSpan={4} className="text-gray-500 text-center">No parameters available for this test.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+    <ErrorBoundary>
+      <div className="p-6 space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Test Results for Sample #{sample.accession_number || "N/A"}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <p><strong>Patient Name:</strong> {sample.patient?.name || "N/A"}</p>
+              <p><strong>Sample Type(s):</strong> {sample.sample_type || "N/A"}</p>
+              <p><strong>Collection Date:</strong> {formattedCollection.date}</p>
+              <p><strong>Collection Time:</strong> {formattedCollection.time}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {safeTests.map((test, index) => (
+          <Card key={index} className="space-y-4">
+            <CardHeader>
+              <CardTitle>Sample Type: {test.sample_types.join(', ') || "Unknown"}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="border p-4 rounded-md">
+                <p><strong>Test Name:</strong> {test.name || test.code || test.id || "N/A"}</p>
+                <div className="overflow-x-auto mt-2">
+                  <table className="min-w-full border text-sm">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="border px-2 py-1 text-left w-1/4 min-w-[120px]">Parameter</th>
+                        <th className="border px-2 py-1 text-left w-1/4 min-w-[120px]">Value</th>
+                        <th className="border px-2 py-1 text-left w-1/4 min-w-[100px]">Unit</th>
+                        <th className="border px-2 py-1 text-left w-1/4 min-w-[120px]">Normal Range</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Array.isArray(test.parameters) && test.parameters.length > 0 ? (
+                        test.parameters.map((param, paramIndex) => {
+                          const paramName = typeof param === 'object' && param.name ? param.name : param;
+                          const paramUnits = typeof param === 'object' && param.units ? param.units : '';
+                          const paramRange = typeof param === 'object' && param.normal_range ? param.normal_range : '';
+                          return (
+                            <tr key={paramIndex}>
+                              <td className="border px-2 py-1 font-medium">{paramName}</td>
+                              <td className="border px-2 py-1">
+                                <input
+                                  type="text"
+                                  className="w-full px-2 py-1 border rounded"
+                                  value={results[test.id]?.[paramName] || ''}
+                                  onChange={e => handleResultChange(test.id, paramName, e.target.value)}
+                                  placeholder="Enter value"
+                                />
+                              </td>
+                              <td className="border px-2 py-1">{paramUnits || '—'}</td>
+                              <td className="border px-2 py-1">{paramRange || '—'}</td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr><td colSpan={4} className="text-gray-500 text-center">No parameters available for this test.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-500">No tests available for this sample.</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      <button
-        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-        onClick={handleSaveResults}
-      >
-        Save Results
-      </button>
-    </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+
+        <button
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          onClick={handleSaveResults}
+        >
+          Save Results
+        </button>
+      </div>
+    </ErrorBoundary>
   );
 };
 

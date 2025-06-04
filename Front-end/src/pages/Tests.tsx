@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,33 @@ const allowedSampleTypes = [
   "sputum",
   "tissue"
 ];
+
+// ErrorBoundary to catch runtime errors
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('ErrorBoundary caught:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return <div className="text-red-600 p-4">An error occurred: {this.state.error?.toString()}</div>;
+    }
+    return this.props.children;
+  }
+}
 
 const Tests = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -220,279 +247,284 @@ const Tests = () => {
     }
   });
 
+  // Add logging to debug render cycles
+  console.log('Rendering Tests component');
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Test Management</h1>
-          <p className="text-gray-600">Configure and manage laboratory tests</p>
-        </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Test
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Add New Test</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-2 gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="testName">Test Name</Label>
-                  <Input 
-                    id="testName" 
-                    placeholder="Enter test name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="testCode">Test Code</Label>
-                  <Input 
-                    id="testCode" 
-                    placeholder="Enter test code"
-                    value={formData.code}
-                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Select 
-                    value={formData.category}
-                    onValueChange={(val) => setFormData({ ...formData, category: val })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="hematology">Hematology</SelectItem>
-                      <SelectItem value="clinical_chemistry">Clinical Chemistry</SelectItem>
-                      <SelectItem value="microbiology">Microbiology</SelectItem>
-                      <SelectItem value="immunology">Immunology</SelectItem>
-                      <SelectItem value="endocrinology">Endocrinology</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="department">Department</Label>
-                  <Select
-                    value={formData.department}
-                    onValueChange={(val) => setFormData({ ...formData, department: val })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="laboratory">Laboratory</SelectItem>
-                      <SelectItem value="pathology">Pathology</SelectItem>
-                      <SelectItem value="radiology">Radiology</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price ($)</Label>
-                  <Input 
-                    id="price" 
-                    type="number" 
-                    placeholder="0.00"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="duration">Duration</Label>
-                  <Input 
-                    id="duration" 
-                    placeholder="e.g., 2-4 hours"
-                    value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2 col-span-2">
-                  <Label htmlFor="sampleTypes">Sample Types</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {allowedSampleTypes.map(type => (
-                      <label key={type} className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          value={type}
-                          checked={formData.sample_types.includes(type)}
-                          onChange={e => {
-                            if (e.target.checked) {
-                              setFormData({
-                                ...formData,
-                                sample_types: [...formData.sample_types, type]
-                              });
-                            } else {
-                              setFormData({
-                                ...formData,
-                                sample_types: formData.sample_types.filter(t => t !== type)
-                              });
-                            }
-                          }}
-                        />
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </label>
-                    ))}
+    <ErrorBoundary>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Test Management</h1>
+            <p className="text-gray-600">Configure and manage laboratory tests</p>
+          </div>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add New Test
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add New Test</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit}>
+                <div className="grid grid-cols-2 gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="testName">Test Name</Label>
+                    <Input 
+                      id="testName" 
+                      placeholder="Enter test name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="testCode">Test Code</Label>
+                    <Input 
+                      id="testCode" 
+                      placeholder="Enter test code"
+                      value={formData.code}
+                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select 
+                      value={formData.category}
+                      onValueChange={(val) => setFormData({ ...formData, category: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hematology">Hematology</SelectItem>
+                        <SelectItem value="clinical_chemistry">Clinical Chemistry</SelectItem>
+                        <SelectItem value="microbiology">Microbiology</SelectItem>
+                        <SelectItem value="immunology">Immunology</SelectItem>
+                        <SelectItem value="endocrinology">Endocrinology</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Department</Label>
+                    <Select
+                      value={formData.department}
+                      onValueChange={(val) => setFormData({ ...formData, department: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="laboratory">Laboratory</SelectItem>
+                        <SelectItem value="pathology">Pathology</SelectItem>
+                        <SelectItem value="radiology">Radiology</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price ($)</Label>
+                    <Input 
+                      id="price" 
+                      type="number" 
+                      placeholder="0.00"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="duration">Duration</Label>
+                    <Input 
+                      id="duration" 
+                      placeholder="e.g., 2-4 hours"
+                      value={formData.duration}
+                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="sampleTypes">Sample Types</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {allowedSampleTypes.map(type => (
+                        <label key={type} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            value={type}
+                            checked={formData.sample_types.includes(type)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setFormData({
+                                  ...formData,
+                                  sample_types: [...formData.sample_types, type]
+                                });
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  sample_types: formData.sample_types.filter(t => t !== type)
+                                });
+                              }
+                            }}
+                          />
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="parameters">Test Parameters</Label>
+                    <Input 
+                      id="parameters" 
+                      placeholder="Enter parameters separated by commas"
+                      value={formData.parameters}
+                      onChange={(e) => setFormData({ ...formData, parameters: e.target.value })}
+                    />
                   </div>
                 </div>
-                <div className="space-y-2 col-span-2">
-                  <Label htmlFor="parameters">Test Parameters</Label>
-                  <Input 
-                    id="parameters" 
-                    placeholder="Enter parameters separated by commas"
-                    value={formData.parameters}
-                    onChange={(e) => setFormData({ ...formData, parameters: e.target.value })}
-                  />
+                <div className="flex justify-end gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => {
+                      resetForm();
+                      setIsAddDialogOpen(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit"
+                    disabled={createTestMutation.isPending}
+                  >
+                    {createTestMutation.isPending ? "Adding..." : "Add Test"}
+                  </Button>
                 </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => {
-                    resetForm();
-                    setIsAddDialogOpen(false);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit"
-                  disabled={createTestMutation.isPending}
-                >
-                  {createTestMutation.isPending ? "Adding..." : "Add Test"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
 
-      {/* Filters Card */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            {/* Search Input */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-              <Input
-                placeholder="Search tests..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        {/* Filters Card */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                <Input
+                  placeholder="Search tests..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              {/* Usage Filter */}
+              <Select
+                value={filters.usage}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, usage: value }))}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Usage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Tests</SelectItem>
+                  <SelectItem value="active">Active in Samples</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Category Filter */}
+              <Select
+                value={filters.category}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="hematology">Hematology</SelectItem>
+                  <SelectItem value="clinical_chemistry">Clinical Chemistry</SelectItem>
+                  <SelectItem value="microbiology">Microbiology</SelectItem>
+                  <SelectItem value="immunology">Immunology</SelectItem>
+                  <SelectItem value="endocrinology">Endocrinology</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Status Filter */}
+              <Select
+                value={filters.status}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Usage Filter */}
-            <Select
-              value={filters.usage}
-              onValueChange={(value) => setFilters(prev => ({ ...prev, usage: value }))}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Usage" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Tests</SelectItem>
-                <SelectItem value="active">Active in Samples</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Category Filter */}
-            <Select
-              value={filters.category}
-              onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="hematology">Hematology</SelectItem>
-                <SelectItem value="clinical_chemistry">Clinical Chemistry</SelectItem>
-                <SelectItem value="microbiology">Microbiology</SelectItem>
-                <SelectItem value="immunology">Immunology</SelectItem>
-                <SelectItem value="endocrinology">Endocrinology</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Status Filter */}
-            <Select
-              value={filters.status}
-              onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tests Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TestTube className="h-5 w-5" />
-            Laboratory Tests ({filteredTests.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filteredTests.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">No tests found.</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Test Code</TableHead>
-                  <TableHead>Test Name</TableHead>
-                  <TableHead>Sample Type</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Parameters</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTests.map((test) => (
-                  <TableRow key={test.id}>
-                    <TableCell>{test.code}</TableCell>
-                    <TableCell>{test.name}</TableCell>
-                    <TableCell>{test.sample_types.join(', ')}</TableCell>
-                    <TableCell>{test.category}</TableCell>
-                    <TableCell>${test.price.toFixed(2)}</TableCell>
-                    <TableCell>{test.duration}</TableCell>
-                    <TableCell>{test.parameters.join(', ')}</TableCell>
-                    <TableCell>{test.status}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+        {/* Tests Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TestTube className="h-5 w-5" />
+              Laboratory Tests ({filteredTests.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {filteredTests.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">No tests found.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Test Code</TableHead>
+                    <TableHead>Test Name</TableHead>
+                    <TableHead>Sample Type</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead>Parameters</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredTests.map((test) => (
+                    <TableRow key={test.id}>
+                      <TableCell>{test.code}</TableCell>
+                      <TableCell>{test.name}</TableCell>
+                      <TableCell>{test.sample_types.join(', ')}</TableCell>
+                      <TableCell>{test.category}</TableCell>
+                      <TableCell>${test.price.toFixed(2)}</TableCell>
+                      <TableCell>{test.duration}</TableCell>
+                      <TableCell>{test.parameters.join(', ')}</TableCell>
+                      <TableCell>{test.status}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </ErrorBoundary>
   );
 };
 
