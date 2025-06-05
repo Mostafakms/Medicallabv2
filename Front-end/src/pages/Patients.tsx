@@ -20,11 +20,12 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Edit, Eye } from 'lucide-react';
+import { Search, Plus, Edit, Eye, TestTube } from 'lucide-react';
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/api";
 import { toast } from "sonner";
+import { useNavigate } from 'react-router-dom';
 
 interface Patient {
   id: string;
@@ -34,6 +35,7 @@ interface Patient {
   phone: string;
   email: string;
   address: string;
+  doctor?: string;
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +50,7 @@ interface PatientFormData {
   address: string;
   insurance: string;
   policyNumber: string;
+  doctor: string;
 }
 
 const Patients = () => {
@@ -57,6 +60,7 @@ const Patients = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Form state
   const [formData, setFormData] = useState<PatientFormData>({
@@ -68,7 +72,8 @@ const Patients = () => {
     email: '',
     address: '',
     insurance: '',
-    policyNumber: ''
+    policyNumber: '',
+    doctor: '',
   });
 
   // Reset form
@@ -82,7 +87,8 @@ const Patients = () => {
       email: '',
       address: '',
       insurance: '',
-      policyNumber: ''
+      policyNumber: '',
+      doctor: '',
     });
     setSelectedPatient(null);
   };
@@ -93,13 +99,14 @@ const Patients = () => {
     setFormData({
       firstName,
       lastName: lastNameParts.join(' '),
-      age: patient.age.toString(),
+      age: patient.age?.toString() || '',
       gender: patient.gender,
       phone: patient.phone || '',
       email: patient.email || '',
       address: patient.address || '',
-      insurance: '', // Add these fields if they exist in your Patient interface
-      policyNumber: ''
+      insurance: '',
+      policyNumber: '',
+      doctor: patient.doctor || '',
     });
     setSelectedPatient(patient);
   };
@@ -133,6 +140,22 @@ const Patients = () => {
     }
   });
 
+  // Delete patient mutation
+  const deletePatientMutation = useMutation({
+    mutationFn: (id: string) => api.deletePatient(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+      toast.success("Patient deleted successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to delete patient");
+    }
+  });
+
+  // State for delete confirmation
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
+
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,7 +167,8 @@ const Patients = () => {
       email: formData.email,
       address: formData.address,
       insurance_provider: formData.insurance,
-      policy_number: formData.policyNumber
+      policy_number: formData.policyNumber,
+      doctor: formData.doctor,
     };
 
     if (selectedPatient) {
@@ -175,11 +199,11 @@ const Patients = () => {
   });
 
   // Filter patients based on search term
-  const filteredPatients = patientsData?.filter((patient: Patient) =>
+  const filteredPatients = (patientsData?.filter((patient: Patient) =>
     patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     patient.phone?.includes(searchTerm) ||
     patient.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) ?? [];
+  ) ?? []).slice().reverse();
 
   return (
     <div className="space-y-6">
@@ -288,6 +312,15 @@ const Patients = () => {
                     onChange={(e) => handleInputChange('policyNumber', e.target.value)}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="doctor">Doctor</Label>
+                  <Input 
+                    id="doctor" 
+                    placeholder="Enter doctor name"
+                    value={formData.doctor}
+                    onChange={(e) => handleInputChange('doctor', e.target.value)}
+                  />
+                </div>
               </div>
               <div className="flex justify-end gap-2">
                 <Button 
@@ -343,6 +376,10 @@ const Patients = () => {
               <div className="space-y-2 col-span-2">
                 <Label>Address</Label>
                 <div className="font-medium">{selectedPatient.address || '-'}</div>
+              </div>
+              <div className="space-y-2">
+                <Label>Doctor</Label>
+                <div className="font-medium">{selectedPatient?.doctor || '-'}</div>
               </div>
             </div>
           )}
@@ -451,6 +488,15 @@ const Patients = () => {
                   onChange={(e) => handleInputChange('policyNumber', e.target.value)}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="doctor">Doctor</Label>
+                <Input 
+                  id="doctor" 
+                  placeholder="Enter doctor name"
+                  value={formData.doctor}
+                  onChange={(e) => handleInputChange('doctor', e.target.value)}
+                />
+              </div>
             </div>
             <div className="flex justify-end gap-2">
               <Button 
@@ -471,6 +517,32 @@ const Patients = () => {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Patient</DialogTitle>
+          </DialogHeader>
+          <div>Are you sure you want to delete patient <b>{patientToDelete?.name}</b>?</div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                if (patientToDelete) {
+                  deletePatientMutation.mutate(patientToDelete.id);
+                  setDeleteDialogOpen(false);
+                  setPatientToDelete(null);
+                }
+              }}
+              disabled={deletePatientMutation.isPending}
+            >
+              {deletePatientMutation.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -515,13 +587,14 @@ const Patients = () => {
                 <TableHead>Age</TableHead>
                 <TableHead>Gender</TableHead>
                 <TableHead>Contact</TableHead>
+                <TableHead>Doctor</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                  <TableCell colSpan={7} className="text-center">Loading...</TableCell>
                 </TableRow>
               ) : filteredPatients.map((patient: Patient) => (
                 <TableRow key={patient.id}>
@@ -535,6 +608,7 @@ const Patients = () => {
                       <div className="text-gray-500">{patient.email}</div>
                     </div>
                   </TableCell>
+                  <TableCell>{patient.doctor || '-'}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button 
@@ -556,6 +630,35 @@ const Patients = () => {
                         }}
                       >
                         <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          navigate('/samples', {
+                            state: {
+                              receiveSampleForPatient: {
+                                patientId: patient.id,
+                                patientName: patient.name,
+                              }
+                            }
+                          });
+                        }}
+                        title="Receive Sample"
+                      >
+                        <TestTube className="h-4 w-4 text-blue-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setPatientToDelete(patient);
+                          setDeleteDialogOpen(true);
+                        }}
+                        title="Delete Patient"
+                      >
+                        <span className="sr-only">Delete</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                       </Button>
                     </div>
                   </TableCell>

@@ -22,6 +22,7 @@ class PatientResource extends JsonResource
             'phone' => $this->phone,
             'email' => $this->email,
             'address' => $this->address,
+            'doctor' => $this->doctor,
             'samples_count' => $this->whenLoaded('samples', function() {
                 return $this->samples->count();
             }),

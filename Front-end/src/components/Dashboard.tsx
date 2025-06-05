@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,6 @@ const Dashboard = () => {
   const recentSamples = [
     { id: "ACC001", patient: "John Doe", test: "Complete Blood Count", status: "Processing", priority: "Normal" },
     { id: "ACC002", patient: "Jane Smith", test: "Lipid Profile", status: "Completed", priority: "Urgent" },
-    { id: "ACC003", patient: "Bob Johnson", test: "Liver Function", status: "Pending", priority: "Normal" },
     { id: "ACC004", patient: "Alice Brown", test: "Thyroid Panel", status: "Processing", priority: "Stat" },
   ];
 
@@ -39,7 +37,6 @@ const Dashboard = () => {
     switch (status) {
       case "Completed": return "bg-green-100 text-green-800";
       case "Processing": return "bg-blue-100 text-blue-800";
-      case "Pending": return "bg-yellow-100 text-yellow-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };

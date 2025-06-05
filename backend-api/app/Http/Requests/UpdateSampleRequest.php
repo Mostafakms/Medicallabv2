@@ -34,7 +34,7 @@ class UpdateSampleRequest extends FormRequest
             'collection_date' => ['sometimes', 'required', 'date'],
             'collection_time' => ['sometimes', 'required', 'date_format:H:i'],
             'priority' => ['sometimes', 'required', 'string', 'in:Normal,Urgent,Stat'],
-            'status' => ['sometimes', 'required', 'string', 'in:Pending,Processing,Completed'],
+            'status' => ['sometimes', 'required', 'string', 'in:Processing,Completed'],
             'location' => ['sometimes', 'nullable', 'string', 'max:255'],
             'notes' => ['sometimes', 'nullable', 'string'],
         ];

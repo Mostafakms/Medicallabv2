@@ -28,7 +28,7 @@ class StoreSampleRequest extends FormRequest
             'collection_date' => ['required', 'date'],
             'collection_time' => ['required', 'date_format:H:i'],
             'priority' => ['required', 'string', 'in:Normal,Urgent,Stat'],
-            'status' => ['required', 'string', 'in:Pending,Processing,Completed'],
+            'status' => ['required', 'string', 'in:Processing,Completed'],
             'location' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
             'tests' => ['sometimes', 'array'],

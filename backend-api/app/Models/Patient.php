@@ -13,7 +13,8 @@ class Patient extends Model
         'gender',
         'phone',
         'email',
-        'address'
+        'address',
+        'doctor', // Add doctor to fillable
     ];
 
     protected $casts = [

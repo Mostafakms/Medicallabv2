@@ -28,6 +28,7 @@ class StorePatientRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:255'],
             'address' => ['nullable', 'string', 'max:500'],
+            'doctor' => ['nullable', 'string', 'max:255'], // Add doctor validation
         ];
     }
 }

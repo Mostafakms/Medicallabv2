@@ -26,7 +26,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'; // Import useQ
 import { searchPatients, getSamples, createSample, updateSample, deleteSample, getTests } from '@/lib/api'; // Import the new API call
 import axios from 'axios'; // Add this import if not present
 import { toast } from 'sonner'; // Add this import for toast error
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate, useLocation } from 'react-router-dom'; // Import useNavigate
 
 // Define the structure for a sample
 interface Sample {
@@ -63,7 +63,7 @@ const Samples = () => {
     sampleType: '',
     collectionDate: new Date().toISOString().split('T')[0], // Set default date to current date
     collectionTime: new Date().toTimeString().split(' ')[0].substring(0, 5), // Set default time to current time (HH:mm)
-    priority: '',
+    priority: 'Normal', // Set default to 'Normal' (capitalized)
     tests: [] as string[], // test names for form only
     notes: '',
     location: '',
@@ -81,8 +81,11 @@ const Samples = () => {
   const [editingSample, setEditingSample] = useState<Sample | null>(null); // State to hold the sample being edited
   const [editFormData, setEditFormData] = useState<any>(null); // Use 'any' for form state
 
+  const [isSaving, setIsSaving] = useState(false); // New state for saving indicator
+
   const queryClient = useQueryClient();
   const navigate = useNavigate(); // Initialize useNavigate
+  const location = useLocation();
 
   // Fetch samples from backend
   const { data: samplesResponse, isLoading: isSamplesLoading, refetch: refetchSamples } = useQuery({
@@ -138,7 +141,7 @@ const Samples = () => {
   // Use backend samples if available
   useEffect(() => {
     if (samplesResponse) {
-      setAllSamples(samplesResponse);
+      setAllSamples([...samplesResponse].reverse()); // Show newest first
     }
   }, [samplesResponse]);
 
@@ -180,6 +183,7 @@ const Samples = () => {
 
 
   const handleSubmit = async () => {
+    setIsSaving(true);
     // Simple accession number generation (replace with proper logic)
     const newAccessionNumber = `ACC${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
 
@@ -188,6 +192,7 @@ const Samples = () => {
 
     if (!testIds.length) {
       toast.error("Please select at least one test");
+      setIsSaving(false);
       return;
     }
 
@@ -199,7 +204,7 @@ const Samples = () => {
       collection_date: formData.collectionDate,
       collection_time: formData.collectionTime,
       priority: formData.priority,
-      status: 'Pending',
+      status: 'Processing',
       location: formData.location || 'Unknown',
       notes: formData.notes,
       tests: testIds // Send IDs instead of names
@@ -208,7 +213,9 @@ const Samples = () => {
     try {
       await createSample(payload);
       await refetchSamples();
-      setOpen(false); // Close dialog
+      setIsSaving(false);
+      setOpen(false);
+      toast.success("Sample received successfully");
       // Reset form
       setFormData({
         patientId: '',
@@ -221,8 +228,9 @@ const Samples = () => {
         notes: '',
         location: '',
       });
-    } catch (err) {
-      // Error handled by API interceptor
+    } catch (error) {
+      setIsSaving(false);
+      toast.error("Failed to receive sample");
     }
   };
 
@@ -262,11 +270,15 @@ const Samples = () => {
     // Find the sample by accession number to get its backend ID
     const sample = allSamples.find(s => s.accessionNumber === accessionNumber);
     if (!sample) return;
+    // Show confirmation dialog before deleting
+    const confirmed = window.confirm("Are you sure you want to delete this sample? This action cannot be undone.");
+    if (!confirmed) return;
     try {
       await deleteSample(String(sample.id)); // Use sample.id as string
       await refetchSamples();
-    } catch (err) {
-      // Error handled by API interceptor
+      toast.success("Sample deleted successfully");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to delete sample");
     }
   };
 
@@ -390,9 +402,9 @@ const Samples = () => {
             <SelectValue placeholder="Select priority" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Stat">Stat</SelectItem>
-            <SelectItem value="Urgent">Urgent</SelectItem>
             <SelectItem value="Normal">Normal</SelectItem>
+            <SelectItem value="Urgent">Urgent</SelectItem>
+            <SelectItem value="Stat">Stat</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -447,7 +459,6 @@ const Samples = () => {
     switch (status) {
       case "Completed": return "bg-green-100 text-green-800";
       case "Processing": return "bg-blue-100 text-blue-800";
-      case "Pending": return "bg-yellow-100 text-yellow-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -562,6 +573,20 @@ const Samples = () => {
         }))
     : [];
 
+  // Prefill form if navigated from Patients page with patient data
+  useEffect(() => {
+    if (location.state && location.state.receiveSampleForPatient) {
+      const { patientId, patientName } = location.state.receiveSampleForPatient;
+      setFormData(prev => ({
+        ...prev,
+        patientId: patientId || '',
+        patientName: patientName || '',
+      }));
+      setOpen(true);
+    }
+    // eslint-disable-next-line
+  }, [location.state]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -594,8 +619,10 @@ const Samples = () => {
               isEdit={false}
             />
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button onClick={handleSubmit}>Receive Sample</Button>
+              <Button variant="outline" onClick={() => setOpen(false)} disabled={isSaving}>Cancel</Button>
+              <Button onClick={handleSubmit} disabled={isSaving}>
+                {isSaving ? "Saving..." : "Receive Sample"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -642,7 +669,6 @@ const Samples = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem> {/* Use capitalized values */}
                 <SelectItem value="Processing">Processing</SelectItem>
                 <SelectItem value="Completed">Completed</SelectItem>
               </SelectContent>

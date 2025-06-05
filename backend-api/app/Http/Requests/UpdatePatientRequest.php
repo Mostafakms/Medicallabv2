@@ -28,6 +28,7 @@ class UpdatePatientRequest extends FormRequest
             'phone' => ['sometimes', 'nullable', 'string', 'max:20'],
             'email' => ['sometimes', 'nullable', 'email', 'max:255'],
             'address' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'doctor' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
 }
