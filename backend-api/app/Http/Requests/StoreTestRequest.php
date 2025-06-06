@@ -32,7 +32,9 @@ class StoreTestRequest extends FormRequest
             'duration' => ['required', 'string', 'max:255'],
             'status' => ['required', 'string', 'in:Active,Inactive'],
             'parameters' => ['required', 'array'],
-            'parameters.*' => ['required', 'string', 'max:255'],
+            'parameters.*.name' => ['required', 'string', 'max:255'],
+            'parameters.*.units' => ['nullable', 'string', 'max:255'],
+            'parameters.*.normal_range' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

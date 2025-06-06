@@ -102,7 +102,7 @@ const Results = () => {
         || 'Unknown Patient',
       collection_date: result.sample?.collection_date || '',
       test_name: result.test?.name || 'Unknown Test',
-      status: result.status || 'pending',
+      status: result.sample?.status || 'pending', // Updated to read from sample.status
       results: result.results || {},
       created_at: result.created_at || '',
       phone: result.sample?.patient?.phone || '',

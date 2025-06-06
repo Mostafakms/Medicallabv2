@@ -1,6 +1,7 @@
-import React, { useEffect, useState, type ReactNode } from 'react';
+import React, { useEffect, useState, type ReactNode, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 // ErrorBoundary to catch runtime errors
 interface ErrorBoundaryProps {
@@ -119,6 +120,18 @@ const SampleResults = () => {
     }
   };
 
+  const tests = useMemo(() => {
+    if (!sample || !Array.isArray(sample.tests)) return [];
+    return sample.tests;
+  }, [sample]);
+
+  const safeTests = useMemo(() => {
+    return tests.map(test => ({
+      ...test,
+      status: test.status || 'Pending',
+    }));
+  }, [tests]);
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
   if (!sample) return <div className="text-center text-red-500">No sample data available.</div>;
@@ -126,17 +139,6 @@ const SampleResults = () => {
   const formattedCollection = sample.collection_date
     ? formatDateTime(sample.collection_date)
     : { date: "N/A", time: "N/A" };
-  const tests = Array.isArray(sample.tests) ? sample.tests : [];
-
-  // Add logging to debug white page issue
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('Sample:', sample);
-    console.log('Tests:', tests);
-    console.log('Results:', results);
-  }
-
-  // Defensive checks for tests rendering
-  const safeTests = Array.isArray(tests) ? tests : [];
 
   // Add logging to debug render cycles
   console.log('Rendering SampleResults component');
@@ -155,6 +157,8 @@ const SampleResults = () => {
               <p><strong>Collection Date:</strong> {formattedCollection.date}</p>
               <p><strong>Collection Time:</strong> {formattedCollection.time}</p>
             </div>
+            {/* Display test prices and total for ALL selected tests from ALL sample types */}
+            {/* The price table has been removed as it should only appear in the Receive Sample dialog, not here. */}
           </CardContent>
         </Card>
 
@@ -210,12 +214,71 @@ const SampleResults = () => {
           </Card>
         ))}
 
-        <button
-          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          onClick={handleSaveResults}
-        >
-          Save Results
-        </button>
+        {/* Price summary table for all selected tests */}
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>Test Price Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border text-sm">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border px-2 py-1 text-left">Test Name</th>
+                    <th className="border px-2 py-1 text-left">Sample Type(s)</th>
+                    <th className="border px-2 py-1 text-left">Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {safeTests.map((test, idx) => (
+                    <tr key={idx}>
+                      <td className="border px-2 py-1">{test.name || test.code || test.id || "N/A"}</td>
+                      <td className="border px-2 py-1">{Array.isArray(test.sample_types) ? test.sample_types.join(', ') : (test.sample_types || "N/A")}</td>
+                      <td className="border px-2 py-1">{typeof test.price === 'number' ? test.price.toFixed(2) : (test.price || '0.00')}</td>
+                    </tr>
+                  ))}
+                  <tr className="font-bold bg-gray-50">
+                    <td className="border px-2 py-1" colSpan={2}>Total</td>
+                    <td className="border px-2 py-1">
+                      {safeTests.reduce((sum, t) => sum + (typeof t.price === 'number' ? t.price : parseFloat(t.price) || 0), 0).toFixed(2)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex gap-4">
+          <Button
+            variant="default"
+            onClick={handleSaveResults}
+            className="mt-4"
+          >
+            Save Results
+          </Button>
+          <Button
+            variant="default"
+            style={{ backgroundColor: 'green', color: 'white' }}
+            onClick={async () => {
+              await handleSaveResults();
+              if (sample && sample.id) {
+                try {
+                  await fetch(`http://127.0.0.1:8000/api/samples/${sample.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'Completed' }),
+                  });
+                } catch (err) {
+                  // Handle error silently
+                }
+              }
+            }}
+            className="mt-4"
+          >
+            Save Results and Mark as Completed
+          </Button>
+        </div>
       </div>
     </ErrorBoundary>
   );

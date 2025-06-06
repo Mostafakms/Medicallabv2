@@ -62,8 +62,23 @@ class TestController extends Controller
      */
     public function store(StoreTestRequest $request)
     {
-        $test = Test::create($request->validated());
-        return new TestResource($test);
+        $validated = $request->validated();
+        $parameters = $validated['parameters'] ?? [];
+        unset($validated['parameters']);
+
+        $test = Test::create($validated);
+
+        // Create TestParameter records for each parameter object
+        foreach ($parameters as $index => $param) {
+            $test->parameters()->create([
+                'name' => $param['name'],
+                'order' => $index + 1,
+                'units' => $param['units'] ?? null,
+                'normal_range' => $param['normal_range'] ?? null,
+            ]);
+        }
+
+        return new TestResource($test->fresh());
     }
 
     /**

@@ -16,6 +16,8 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import SampleResults from "./pages/SampleResults";
 import SampleReport from "./pages/SampleReport";
+import AddTest from "./pages/AddTest";
+import EditTest from "./pages/EditTest";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +33,8 @@ const App = () => (
             <Route path="patients" element={<Patients />} />
             <Route path="samples" element={<Samples />} />
             <Route path="tests" element={<Tests />} />
+            <Route path="tests/add" element={<AddTest />} />
+            <Route path="edit-test/:id" element={<EditTest />} />
             <Route path="results" element={<Results />} />
             <Route path="billing" element={<Billing />} />
             <Route path="inventory" element={<Inventory />} />

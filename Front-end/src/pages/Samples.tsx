@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Trash2 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -82,6 +83,7 @@ const Samples = () => {
   const [editFormData, setEditFormData] = useState<any>(null); // Use 'any' for form state
 
   const [isSaving, setIsSaving] = useState(false); // New state for saving indicator
+  const [paidAmount, setPaidAmount] = useState('');
 
   const queryClient = useQueryClient();
   const navigate = useNavigate(); // Initialize useNavigate
@@ -311,149 +313,183 @@ const Samples = () => {
     isPatientSearching = false,
     onPatientSelect,
     isEdit = false,
-  }) => (
-    <div className="grid grid-cols-2 gap-4 py-4">
-      <div className="space-y-2">
-        <Label htmlFor={`${isEdit ? 'edit-' : ''}patient-id`}>Patient ID</Label>
-        <Input
-          id={`${isEdit ? 'edit-' : ''}patient-id`}
-          value={formData.patientId}
-          onChange={(e) => onInputChange('patientId', e.target.value)}
-          placeholder="Enter or scan patient ID"
-          disabled
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${isEdit ? 'edit-' : ''}patient-name`}>Patient Name</Label>
-        <Input
-          id={`${isEdit ? 'edit-' : ''}patient-name`}
-          value={isEdit ? formData.patientName : (patientSearchTerm || formData.patientName)}
-          onChange={(e) => isEdit
-            ? onInputChange('patientName', e.target.value)
-            : setPatientSearchTerm && setPatientSearchTerm(e.target.value)
-          }
-          placeholder={isEdit ? 'Enter patient name' : 'Search or enter patient name'}
-        />
-        {/* Only show patient search results in receive mode */}
-        {!isEdit && setPatientSearchTerm && patientSearchTerm.length > 1 && (
-          <>
-            {patientSearchResults && patientSearchResults.length > 0 && (
-              <div className="border rounded-md max-h-40 overflow-y-auto" role="listbox">
-                {patientSearchResults.map(patient => (
-                  <div
-                    key={patient.id}
-                    className="p-2 cursor-pointer hover:bg-gray-100"
-                    onClick={() => onPatientSelect && onPatientSelect(patient)}
-                    role="option"
-                    aria-selected="false"
-                  >
-                    {patient.name} ({patient.id})
-                  </div>
-                ))}
-              </div>
-            )}
-            {isPatientSearching && (
-              <div className="p-2 text-gray-500">Searching...</div>
-            )}
-            {!isPatientSearching && patientSearchResults?.length === 0 && (
-              <div className="p-2 text-gray-500">No patients found.</div>
-            )}
-          </>
-        )}
-      </div>
-      <div className="space-y-2 col-span-2">
-        <Label htmlFor={`${isEdit ? 'edit-' : ''}collection-date`}>Collection Date & Time</Label>
-        <div className="grid grid-cols-2 gap-4">
+  }) => {
+    // Calculate total amount for selected tests
+  const totalAmount = React.useMemo(() => {
+    if (!Array.isArray(testsForSelectedType) || !Array.isArray(formData.tests)) return 0;
+    return testsForSelectedType
+      .filter((test: any) => formData.tests.includes(test.name))
+      .reduce((sum: number, test: any) => sum + (Number(test.price) || 0), 0);
+  }, [testsForSelectedType, formData.tests]);
+
+  const remainingAmount = React.useMemo(() => {
+    const paid = parseFloat(paidAmount) || 0;
+    return Math.max(totalAmount - paid, 0);
+  }, [totalAmount, paidAmount]);
+
+    return (
+      <div className="grid grid-cols-2 gap-4 py-4">
+        <div className="space-y-2">
+          <Label htmlFor={`${isEdit ? 'edit-' : ''}patient-id`}>Patient ID</Label>
           <Input
-            id={`${isEdit ? 'edit-' : ''}collection-date`}
-            type="date"
-            value={formData.collectionDate}
-            onChange={(e) => onInputChange('collectionDate', e.target.value)}
-            aria-label="Collection Date"
-          />
-          <Input
-            id={`${isEdit ? 'edit-' : ''}collection-time`}
-            type="time"
-            value={formData.collectionTime}
-            onChange={(e) => onInputChange('collectionTime', e.target.value)}
-            aria-label="Collection Time"
+            id={`${isEdit ? 'edit-' : ''}patient-id`}
+            value={formData.patientId}
+            onChange={(e) => onInputChange('patientId', e.target.value)}
+            placeholder="Enter or scan patient ID"
+            disabled
           />
         </div>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${isEdit ? 'edit-' : ''}sample-type`}>Sample Type</Label>
-        <Select value={formData.sampleType} onValueChange={(value) => onInputChange('sampleType', value)}>
-          <SelectTrigger id={`${isEdit ? 'edit-' : ''}sample-type`}>
-            <SelectValue placeholder="Select sample type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Blood">Blood</SelectItem>
-            <SelectItem value="Urine">Urine</SelectItem>
-            <SelectItem value="Stool">Stool</SelectItem>
-            <SelectItem value="Sputum">Sputum</SelectItem>
-            <SelectItem value="Tissue">Tissue</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${isEdit ? 'edit-' : ''}priority`}>Priority</Label>
-        <Select value={formData.priority} onValueChange={(value) => onInputChange('priority', value)}>
-          <SelectTrigger id={`${isEdit ? 'edit-' : ''}priority`}>
-            <SelectValue placeholder="Select priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Normal">Normal</SelectItem>
-            <SelectItem value="Urgent">Urgent</SelectItem>
-            <SelectItem value="Stat">Stat</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${isEdit ? 'edit-' : ''}location`}>Location</Label>
-        <Input
-          id={`${isEdit ? 'edit-' : ''}location`}
-          value={formData.location}
-          onChange={(e) => onInputChange('location', e.target.value)}
-          placeholder="Enter sample location"
-        />
-      </div>
-      <div className="space-y-2 col-span-2">
-        <span className="text-sm font-medium leading-none">Requested Tests</span>
-        <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2" role="group" aria-label="Available Tests">
-          {isTestsLoading ? (
-            <p className="text-gray-500 col-span-2">Loading tests...</p>
-          ) : !Array.isArray(testsResponse) ? (
-            <p className="text-red-500 col-span-2">Failed to load tests.</p>
-          ) : testsForSelectedType.length > 0 ? (
-            testsForSelectedType.map((test: any) => {
-              const checkboxId = `${isEdit ? 'edit-' : ''}test-${test.id}`;
-              return (
-                <div key={test.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={checkboxId}
-                    checked={formData.tests.includes(test.name)}
-                    onCheckedChange={(isChecked) => onTestChange(test.name, isChecked as boolean)}
-                  />
-                  <Label htmlFor={checkboxId}>{test.name}</Label>
+        <div className="space-y-2">
+          <Label htmlFor={`${isEdit ? 'edit-' : ''}patient-name`}>Patient Name</Label>
+          <Input
+            id={`${isEdit ? 'edit-' : ''}patient-name`}
+            value={isEdit ? formData.patientName : (patientSearchTerm || formData.patientName)}
+            onChange={(e) => isEdit
+              ? onInputChange('patientName', e.target.value)
+              : setPatientSearchTerm && setPatientSearchTerm(e.target.value)
+            }
+            placeholder={isEdit ? 'Enter patient name' : 'Search or enter patient name'}
+          />
+          {/* Only show patient search results in receive mode */}
+          {!isEdit && setPatientSearchTerm && patientSearchTerm.length > 1 && (
+            <>
+              {patientSearchResults && patientSearchResults.length > 0 && (
+                <div className="border rounded-md max-h-40 overflow-y-auto" role="listbox">
+                  {patientSearchResults.map(patient => (
+                    <div
+                      key={patient.id}
+                      className="p-2 cursor-pointer hover:bg-gray-100"
+                      onClick={() => onPatientSelect && onPatientSelect(patient)}
+                      role="option"
+                      aria-selected="false"
+                    >
+                      {patient.name} ({patient.id})
+                    </div>
+                  ))}
                 </div>
-              );
-            })
-          ) : (
-            <p className="text-gray-500 col-span-2">Select a sample type to see available tests.</p>
+              )}
+              {isPatientSearching && (
+                <div className="p-2 text-gray-500">Searching...</div>
+              )}
+              {!isPatientSearching && patientSearchResults?.length === 0 && (
+                <div className="p-2 text-gray-500">No patients found.</div>
+              )}
+            </>
           )}
         </div>
+        <div className="space-y-2 col-span-2">
+          <Label htmlFor={`${isEdit ? 'edit-' : ''}collection-date`}>Collection Date & Time</Label>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              id={`${isEdit ? 'edit-' : ''}collection-date`}
+              type="date"
+              value={formData.collectionDate}
+              onChange={(e) => onInputChange('collectionDate', e.target.value)}
+              aria-label="Collection Date"
+            />
+            <Input
+              id={`${isEdit ? 'edit-' : ''}collection-time`}
+              type="time"
+              value={formData.collectionTime}
+              onChange={(e) => onInputChange('collectionTime', e.target.value)}
+              aria-label="Collection Time"
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`${isEdit ? 'edit-' : ''}sample-type`}>Sample Type</Label>
+          <Select value={formData.sampleType} onValueChange={(value) => onInputChange('sampleType', value)}>
+            <SelectTrigger id={`${isEdit ? 'edit-' : ''}sample-type`}>
+              <SelectValue placeholder="Select sample type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Blood">Blood</SelectItem>
+              <SelectItem value="Urine">Urine</SelectItem>
+              <SelectItem value="Stool">Stool</SelectItem>
+              <SelectItem value="Sputum">Sputum</SelectItem>
+              <SelectItem value="Tissue">Tissue</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`${isEdit ? 'edit-' : ''}priority`}>Priority</Label>
+          <Select value={formData.priority} onValueChange={(value) => onInputChange('priority', value)}>
+            <SelectTrigger id={`${isEdit ? 'edit-' : ''}priority`}>
+              <SelectValue placeholder="Select priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Normal">Normal</SelectItem>
+              <SelectItem value="Urgent">Urgent</SelectItem>
+              <SelectItem value="Stat">Stat</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`${isEdit ? 'edit-' : ''}location`}>Location</Label>
+          <Input
+            id={`${isEdit ? 'edit-' : ''}location`}
+            value={formData.location}
+            onChange={(e) => onInputChange('location', e.target.value)}
+            placeholder="Enter sample location"
+          />
+        </div>
+        <div className="space-y-2 col-span-2">
+          <span className="text-sm font-medium leading-none">Requested Tests</span>
+          <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2" role="group" aria-label="Available Tests">
+            {isTestsLoading ? (
+              <p className="text-gray-500 col-span-2">Loading tests...</p>
+            ) : !Array.isArray(testsResponse) ? (
+              <p className="text-red-500 col-span-2">Failed to load tests.</p>
+            ) : testsForSelectedType.length > 0 ? (
+              testsForSelectedType.map((test: any) => {
+                const checkboxId = `${isEdit ? 'edit-' : ''}test-${test.id}`;
+                return (
+                  <div key={test.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={checkboxId}
+                      checked={formData.tests.includes(test.name)}
+                      onCheckedChange={(isChecked) => onTestChange(test.name, isChecked as boolean)}
+                    />
+                    <Label htmlFor={checkboxId}>{test.name}</Label>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-gray-500 col-span-2">Select a sample type to see available tests.</p>
+            )}
+          </div>
+        </div>
+        <div className="space-y-2 col-span-2">
+          <Label htmlFor={`${isEdit ? 'edit-' : ''}notes`}>Collection Notes</Label>
+          <Input
+            id={`${isEdit ? 'edit-' : ''}notes`}
+            value={formData.notes}
+            onChange={(e) => onInputChange('notes', e.target.value)}
+            placeholder="Any special instructions or notes"
+          />
+        </div>
+        <div className="space-y-2 col-span-2">
+          <Label>Total Amount</Label>
+          <Input value={totalAmount.toFixed(2)} readOnly className="bg-gray-100" />
+        </div>
+        <div className="space-y-2 col-span-2">
+          <Label>Paid Amount</Label>
+          <Input
+            type="number"
+            min="0"
+            step="0.01"
+            value={paidAmount}
+            onChange={e => setPaidAmount(e.target.value)}
+            placeholder="Enter paid amount"
+          />
+        </div>
+        <div className="space-y-2 col-span-2">
+          <Label>Remaining</Label>
+          <Input value={remainingAmount.toFixed(2)} readOnly className="bg-gray-100" />
+        </div>
       </div>
-      <div className="space-y-2 col-span-2">
-        <Label htmlFor={`${isEdit ? 'edit-' : ''}notes`}>Collection Notes</Label>
-        <Input
-          id={`${isEdit ? 'edit-' : ''}notes`}
-          value={formData.notes}
-          onChange={(e) => onInputChange('notes', e.target.value)}
-          placeholder="Any special instructions or notes"
-        />
-      </div>
-    </div>
-  );
+    );
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -803,8 +839,8 @@ const Samples = () => {
   <TestTube className="h-4 w-4" />
 </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleDeleteSample(sample.accessionNumber)}>
-                      <span className="sr-only">Delete</span>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                     <span className="sr-only">Delete</span>
+                     <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
                   </div>
                 </TableCell>
